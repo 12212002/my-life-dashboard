@@ -1352,10 +1352,8 @@ function calendarEventColor(a){
 }
 function eventColorStyle(a,monthTimed=false){
   const bg=calendarEventColor(a);
-  const rgb=[1,3,5].map(i=>parseInt(bg.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4));
-  const lum=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];
-  const stripe=a.calendarId&&validCalendarColor(a.color)&&validCalendarColor(a.eventColor)&&a.color.toLowerCase()!==bg.toLowerCase()?'border-left:4px solid '+a.color+';':'';
-  return monthTimed?'background:transparent;color:var(--calendar-text);':'background:'+bg+';color:'+(lum>.38?'#202124':'#ffffff')+';'+stripe;
+    const stripe=a.calendarId&&validCalendarColor(a.color)&&validCalendarColor(a.eventColor)&&a.color.toLowerCase()!==bg.toLowerCase()?'border-left:4px solid '+a.color+';':'';
+  return monthTimed?'background:transparent;color:var(--calendar-text);':'background:'+bg+';color:'+(bg.toLowerCase()==='#ffffff'?'#000000':'#ffffff')+';'+stripe;
 }
 function googleTimeRange(start,end){
   if(!start)return '';
