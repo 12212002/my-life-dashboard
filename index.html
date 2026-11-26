@@ -1,16 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- FIREBASE CONFIGURATION START — replace only the object below -->
+<!-- FIREBASE CONFIGURATION START -->
 <script>
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  const firebaseConfig = {
+const firebaseConfig = {
     apiKey: "AIzaSyAJ4o71gWq4s_EnYMPYVdwU-iIdhmEry-E",
     authDomain: "my-life-dashboard-45ffe.firebaseapp.com",
     projectId: "my-life-dashboard-45ffe",
@@ -18,10 +11,6 @@
     messagingSenderId: "544971555964",
     appId: "1:544971555964:web:f7fcf63cf6eb6ed532b5f9"
   };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-</script>
 </script>
 <!-- FIREBASE CONFIGURATION END -->
 <meta charset="UTF-8">
@@ -751,6 +740,21 @@ h1 {
 </style>
 </head>
 <body>
+<style>
+#authGate{position:fixed;inset:0;z-index:100000;background:#101624;display:grid;place-items:center;padding:24px;color:#eff4ff}
+#authGate[hidden]{display:none}
+#authGate .login-card{width:min(420px,100%);background:#1b2537;border:1px solid #354157;border-radius:20px;padding:32px;text-align:center}
+#authGate button{margin:12px 0;width:100%}
+#cloudBar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+#cloudStatus{font-size:13px;color:var(--muted)}
+body:not(.authenticated)>aside,body:not(.authenticated)>main{display:none}
+</style>
+<div id="authGate"><div class="login-card">
+<h1>My Life Dashboard</h1><p>Sign in to your private workspace.</p>
+<button id="googleLogin" disabled>Sign in with Google</button>
+<p id="authMessage" role="status">Connecting securely…</p>
+<button id="gateLogout" hidden>Sign out</button>
+</div></div>
 <aside><h2>◈ My Life Dashboard</h2>
 <small>Your personal workspace</small>
 <nav id="nav"></nav>
@@ -760,6 +764,7 @@ h1 {
 </div>
 <button class="secondary" id="theme">◐ Theme</button>
 </div>
+<div id="cloudBar"><span id="cloudStatus" role="status">Connecting…</span><button class="secondary" id="cloudLogout">Sign out</button><button class="secondary" id="oldBackup" hidden>Export previous local data</button></div>
 <div id="content"></div>
 </main>
 <div id="toast" role="status"></div>
@@ -773,15 +778,7 @@ const $=id=>document.getElementById(id), esc=v=>String(v??'').replace(/[&<>"']/g
 const defaults=()=>({
   transactions:[],university:[],semesters:[],courses:[],work:[],calendar:[],vehicle:[],knowledge:[],links:[],opening:0,theme:'light',budget:20,projection:12
 });
-let state=defaults(),storageOK=true;
-try{
-  const saved=localStorage.getItem('myLifeDashboard.v1');
-  if(saved)state={
-    ...state,...JSON.parse(saved)
-  }
-} catch(e){
-  storageOK=false
-}
+let state=defaults(),storageOK=true,cloudReady=false,cloudSave=null;
 let page='Home',edit=null,month=today().slice(0,7),calMonth=today().slice(0,7);
 let semesterId='',courseFilter='';
 function migrateUniversity(){
@@ -808,13 +805,8 @@ function migrateUniversity(){
 migrateUniversity();
 const sections=[['Home','⌂','Your daily overview'],['University','🎓','Grades, exams & assignments'],['Work','▤','Tasks & follow-ups'],['Calendar','▦','Schedule & deadlines'],['Finances','$','Income, expenses & projections'],['Vehicle','🚘','Maintenance & mileage'],['Knowledge Base','▧','Notes & procedures'],['Quick Links','↗','Frequently visited websites'],['Settings','⚙','Preferences & appearance']];
 function save(){
-  try{
-    localStorage.setItem('myLifeDashboard.v1',JSON.stringify(state));
-    storageOK=true
-  } catch(e){
-    storageOK=false;
-    notify('Local saving failed. Export a backup in Settings.')
-  }
+  if(!cloudReady || !cloudSave){notify('Cloud not connected. Changes are not saved.');return;}
+  cloudSave(JSON.parse(JSON.stringify(state)));
 }
 function notify(s){
   $('toast').textContent=s;
@@ -1333,7 +1325,7 @@ function bind(){
     download('finance.csv',[keys.join(','),...state.transactions.map(a=>keys.map(k=>quote(a[k])).join(','))].join('\r\n'),'text/csv')
   };
   if($('reset'))$('reset').onclick=()=>{
-    if(confirm('Permanently delete all dashboard data from this browser?')){
+    if(confirm('Permanently delete all dashboard data from your cloud account and synced devices?')){
       state=defaults();
       save();
       go('Home')
@@ -1363,10 +1355,84 @@ function bind(){
     }
   }
 }
-render();
-setInterval(()=>{
-  if(page==='Calendar')clockLine()
-},15000);
+setInterval(()=>{if(cloudReady && page==='Calendar')clockLine()},15000);
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+import { getFirestore, doc, getDocFromServer, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+const gate=$('authGate'), message=$('authMessage'), login=$('googleLogin'), status=$('cloudStatus');
+let unsubscribe=null,generation=0,pending=0,failed=false,queue=Promise.resolve(),lastRemote=null;
+function lock(msg){
+  cloudReady=false;cloudSave=null;
+  document.body.classList.remove('authenticated');
+  gate.hidden=false;message.textContent=msg;
+  $('content').replaceChildren();$('nav').replaceChildren();
+  state=defaults();edit=null;semesterId='';courseFilter='';
+}
+try{
+  const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+  login.disabled=false;
+  login.onclick=async()=>{
+    login.disabled=true;message.textContent='Opening Google sign-in…';
+    try{await signInWithPopup(auth,new GoogleAuthProvider());}
+    catch(e){message.textContent='Sign-in failed: '+e.message;login.disabled=false;}
+  };
+  $('cloudLogout').onclick=async()=>{
+    if(pending||failed){notify('Cloud save pending or failed. Export a backup before leaving.');return;}
+    try{await signOut(auth)}catch(e){notify(e.message)}
+  };
+  $('gateLogout').onclick=()=>signOut(auth).catch(e=>{message.textContent=e.message;});
+  onAuthStateChanged(auth,async user=>{
+    const session=++generation;
+    if(unsubscribe){unsubscribe();unsubscribe=null;}
+    lock(user?'Checking private database access…':'Sign in to continue.');
+    login.hidden=!!user;login.disabled=!!user;$('gateLogout').hidden=!user;
+    if(!user)return;
+    const ref=doc(db,'users',user.uid,'dashboard','state');
+    try{
+      const snapshot=await getDocFromServer(ref);
+      if(session!==generation)return;
+      if(snapshot.exists()){
+        const remote=snapshot.data().state;
+        if(!remote||typeof remote!=='object')throw Error('Invalid cloud data.');
+        state={...defaults(),...remote};
+      }else{
+        await setDoc(ref,{state:defaults()});
+        if(session!==generation)return;
+      }
+      lastRemote=JSON.stringify(state);
+      migrateUniversity();page='Home';pending=0;failed=false;queue=Promise.resolve();
+      cloudReady=true;
+      cloudSave=data=>{
+        pending++;status.textContent='Saving to cloud…';
+        queue=queue.catch(()=>{}).then(async()=>{
+          if(session!==generation)return;
+          try{await setDoc(ref,{state:data});if(session===generation){failed=false;lastRemote=JSON.stringify(data);}}
+          catch(e){if(session===generation){failed=true;notify('Cloud save failed. Export a backup in Settings.');}}
+          finally{if(session===generation){pending--;status.textContent=failed?'Save failed — export backup':pending?'Saving to cloud…':'Saved to cloud';}}
+        });
+      };
+      gate.hidden=true;document.body.classList.add('authenticated');status.textContent='Cloud connected';render();
+      try{
+        const raw=localStorage.getItem('myLifeDashboard.v1');
+        $('oldBackup').hidden=!raw;
+        $('oldBackup').onclick=()=>download('my-life-local-backup.json',raw,'application/json');
+      }catch(e){}
+      unsubscribe=onSnapshot(ref,{includeMetadataChanges:true},snap=>{
+        if(session!==generation||!snap.exists()||snap.metadata.hasPendingWrites||snap.metadata.fromCache||pending||failed)return;
+        const remote=snap.data().state;if(!remote||typeof remote!=='object')return;
+        const json=JSON.stringify(remote);if(json===lastRemote)return;
+        lastRemote=json;state={...defaults(),...remote};migrateUniversity();edit=null;render();status.textContent='Synced from cloud';
+      },e=>{if(session===generation)status.textContent='Live sync unavailable: '+e.code;});
+    }catch(e){
+      if(session!==generation)return;
+      lock('Access denied or database unavailable. Check your Firestore rules and authorized Google account. ('+(e.code||e.message)+')');
+    }
+  });
+}catch(e){message.textContent='Firebase setup error: '+e.message;}
+
 </script>
 </body>
 </html>
