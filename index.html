@@ -764,8 +764,8 @@ body.dark .cal-scroll{--calendar-grid:#3c4043;--calendar-bg:#202124;--calendar-t
 .cal-scroll button.cal-event.week-event.compact{display:block}
 .cal-scroll .cal-event:hover{filter:brightness(.94)}
 .cal-scroll .week-event{position:absolute;display:block;margin:0;min-height:0;padding:4px 6px;border:1px solid var(--calendar-bg);border-radius:5px}
-.cal-scroll .event-title{display:block;font-weight:600;line-height:1.2}
-.cal-scroll .event-time{display:block;font-size:11px;font-weight:400;line-height:1.15;margin-top:2px}
+.cal-scroll .event-title{color:inherit!important;display:block;font-weight:600;line-height:1.2}
+.cal-scroll .event-time{color:inherit!important;display:block;font-size:11px;font-weight:400;line-height:1.15;margin-top:2px}
 .cal-scroll .week-event.compact .event-title,.cal-scroll .week-event.compact .event-time{display:inline;margin:0;font-size:11px}
 .cal-scroll .week-event.compact{padding:2px 4px}
 .cal-scroll .month-grid{border-color:var(--calendar-grid)}
@@ -1268,6 +1268,26 @@ function layoutWeekEvents(events){
     let group=[],groupEnd=-1;
     function finish(){
       if(!group.length)return;
+      // Long anchor events with short overlaps at their boundaries retain a broad card.
+      if(group.length===2){
+        const [a,b]=group;
+        const long=(a.end-a.start)>=(b.end-b.start)?a:b;
+        const short=long===a?b:a;
+        const shared=Math.min(long.end,short.end)-Math.max(long.start,short.start);
+        if(shared>0&&(long.end-long.start)>=2.5*(short.end-short.start)&&shared<=60){
+          long.left=left;long.width=width*.86;long.layer=layer;
+          short.left=left+width*.48;short.width=width*.52;short.layer=layer+1;
+          for(const item of group){
+            const children=sorted.filter(x=>x.parent===item);
+            if(children.length){
+              const childLeft=item.left+item.width*(item===long?.56:.48);
+              const childWidth=item===long?left+width-childLeft:item.width*.52;
+              place(children,childLeft,childWidth,item.layer+1);
+            }
+          }
+          group=[];groupEnd=-1;return;
+        }
+      }
       // Brief boundary overlaps: keep cards wide, with later events slightly inset.
       const brief=(a,b)=>{
         const shared=Math.min(a.end,b.end)-Math.max(a.start,b.start);
@@ -1353,7 +1373,7 @@ function calendarEventColor(a){
 function eventColorStyle(a,monthTimed=false){
   const bg=calendarEventColor(a);
     const stripe=a.calendarId&&validCalendarColor(a.color)&&validCalendarColor(a.eventColor)&&a.color.toLowerCase()!==bg.toLowerCase()?'border-left:4px solid '+a.color+';':'';
-  return monthTimed?'background:transparent;color:var(--calendar-text);':'background:'+bg+';color:'+(bg.toLowerCase()==='#ffffff'?'#000000':'#ffffff')+';'+stripe;
+  return monthTimed?'background:transparent;color:var(--calendar-text);':'background:'+bg+';color:'+(bg.toLowerCase()==='#ffffff'?'#000000':'#ffffff')+' !important;'+stripe;
 }
 function googleTimeRange(start,end){
   if(!start)return '';
