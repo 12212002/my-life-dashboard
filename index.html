@@ -1288,6 +1288,28 @@ function layoutWeekEvents(events){
         }
         group=[];groupEnd=-1;return;
       }
+      // A short event bridging two otherwise separate long events gets a foreground card.
+      if(group.length===3&&!triple){
+        const [first,middle,last]=group;
+        const duration=x=>x.end-x.start;
+        if(!overlaps(first,last)&&overlaps(first,middle)&&overlaps(middle,last)
+          &&duration(middle)<=.65*Math.min(duration(first),duration(last))
+          &&Math.min(first.end,middle.end)-middle.start<=20
+          &&middle.end-last.start<=45){
+          first.left=left;first.width=width*.94;first.layer=layer;
+          last.left=left;last.width=width*.80;last.layer=layer;
+          middle.left=left+width*.46;middle.width=width*.48;middle.layer=layer+1;
+          for(const item of group){
+            const children=sorted.filter(x=>x.parent===item);
+            if(children.length){
+              const childLeft=item.left+item.width*.48,childWidth=item.width*.52;
+              item.width*=.86;
+              place(children,childLeft,childWidth,item.layer+1);
+            }
+          }
+          group=[];groupEnd=-1;return;
+        }
+      }
       const ends=[];
       for(const item of group){
         let col=ends.findIndex(end=>end<=item.start);
