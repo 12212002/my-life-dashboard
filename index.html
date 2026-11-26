@@ -744,6 +744,42 @@ h1 {
 }
 button.cal-event{display:block;text-align:left;width:calc(100% - 6px);font:inherit;font-size:12px;cursor:pointer;white-space:normal;overflow-wrap:anywhere;color:var(--text);border:0;border-radius:4px;padding:3px 5px}
 button.cal-event.week-event{width:auto;min-height:16px}
+
+/* Google Calendar inspired layout, confined to schedule */
+.cal-scroll{font-family:Arial,Helvetica,sans-serif;--calendar-grid:#dadce0;--calendar-bg:#fff;--calendar-text:#3c4043;--calendar-muted:#70757a;background:var(--calendar-bg);color:var(--calendar-text);border-radius:8px;border:1px solid var(--calendar-grid)}
+body.dark .cal-scroll{--calendar-grid:#3c4043;--calendar-bg:#202124;--calendar-text:#e8eaed;--calendar-muted:#9aa0a6}
+.cal-scroll .week-grid{grid-template-columns:58px repeat(7,minmax(94px,1fr));min-width:735px}
+.cal-scroll .week-head{border:0;border-bottom:1px solid var(--calendar-grid);padding:10px 4px 8px;color:var(--calendar-muted);text-transform:uppercase;font-size:11px;letter-spacing:.6px;background:var(--calendar-bg)}
+.cal-scroll .cal-date{width:40px;height:40px;font-size:24px;font-weight:400;letter-spacing:0;color:var(--calendar-text);margin-top:4px}
+.cal-scroll .is-today .cal-date{background:#1a73e8;color:white}
+.cal-scroll .week-head.is-today{color:#1a73e8}
+.cal-scroll .week-all{border:0;border-right:1px solid var(--calendar-grid);border-bottom:1px solid var(--calendar-grid);background:var(--calendar-bg);padding:2px}
+.cal-scroll .week-hours,.cal-scroll .week-day{height:1440px;border-right:1px solid var(--calendar-grid);background-color:var(--calendar-bg)}
+.cal-scroll .week-day{background-image:repeating-linear-gradient(to bottom,var(--calendar-grid) 0px,var(--calendar-grid) 1px,transparent 1px,transparent 60px)}
+.cal-scroll .hour-label{font-size:10px;color:var(--calendar-muted);transform:translateY(-50%);right:8px;white-space:nowrap}
+.cal-scroll .hour-label:first-child{transform:none}
+.cal-scroll .cal-event{border:0;border-radius:5px;box-sizing:border-box;text-align:left;line-height:1.18;font-family:inherit;font-size:12px;font-weight:400;box-shadow:none;margin:2px 0;padding:3px 6px;overflow:hidden;white-space:normal;overflow-wrap:anywhere}
+.cal-scroll button.cal-event{width:100%;min-height:0;cursor:pointer;display:block}
+.cal-scroll .cal-event:hover{filter:brightness(.94)}
+.cal-scroll .week-event{position:absolute;display:block;margin:0;min-height:0;padding:4px 6px;border:1px solid var(--calendar-bg);border-radius:5px}
+.cal-scroll .event-title{display:block;font-weight:600;line-height:1.2}
+.cal-scroll .event-time{display:block;font-size:11px;font-weight:400;line-height:1.15;margin-top:2px}
+.cal-scroll .week-event.compact .event-title,.cal-scroll .week-event.compact .event-time{display:inline;margin:0;font-size:11px}
+.cal-scroll .week-event.compact{padding:2px 4px}
+.cal-scroll .month-grid{border-color:var(--calendar-grid)}
+.cal-scroll .month-grid>div{border-color:var(--calendar-grid);padding:3px;min-height:112px}
+.cal-scroll .month-grid>.weekday{min-height:0;padding:7px 0;text-transform:uppercase;font-size:11px;letter-spacing:.5px}
+.cal-scroll .month-grid .cal-date{display:grid;margin:3px auto;width:26px;height:26px;font-size:12px}
+.cal-scroll .month-grid .cal-event{font-size:11px;min-height:18px;padding:2px 5px;line-height:14px;white-space:nowrap;text-overflow:ellipsis}
+.cal-scroll .month-grid .event-title,.cal-scroll .month-grid .event-time{display:inline;font-size:11px;margin:0}
+.cal-scroll .month-grid .event-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:1px}
+.cal-scroll .month-grid .outside{opacity:1;color:var(--calendar-muted)}
+.cal-scroll .month-grid .outside .cal-date{color:var(--calendar-muted)}
+.cal-scroll .month-grid .is-today{background:transparent}
+.cal-scroll .now-line{background:#ea4335;height:2px}
+.cal-scroll .now-line:before{background:#ea4335;width:10px;height:10px;top:-4px;left:-5px}
+.cal-scroll .week-day.is-today{background-color:var(--calendar-bg)}
+
 </style>
 </head>
 <body>
@@ -1245,31 +1281,45 @@ function layoutWeekEvents(events){
   return sorted;
 }
 function validCalendarColor(value){return typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value);}
-function eventColorStyle(a){
-  if(!a.calendarId)return '';
-  const stripe=validCalendarColor(a.color)?a.color:'#4285f4';
-  const bg=validCalendarColor(a.eventColor)?a.eventColor:stripe;
+function calendarEventColor(a){
+  return validCalendarColor(a.eventColor)?a.eventColor:validCalendarColor(a.color)?a.color:a.kind==='school'?'#188038':a.kind==='work'?'#e37400':'#4285f4';
+}
+function eventColorStyle(a,monthTimed=false){
+  const bg=calendarEventColor(a);
   const rgb=[1,3,5].map(i=>parseInt(bg.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4));
   const lum=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];
-  return 'background:'+bg+';border-left:4px solid '+stripe+';color:'+(lum>.179?'#111111':'#ffffff')+';';
+  return monthTimed?'background:transparent;color:var(--calendar-text);':'background:'+bg+';color:'+(lum>.38?'#202124':'#ffffff')+';';
+}
+function googleTimeRange(start,end){
+  if(!start)return '';
+  const parts=t=>{const [h,m]=t.split(':').map(Number);return {clock:(h%12||12)+(m?':'+String(m).padStart(2,'0'):''),period:h%24<12?'am':'pm'};};
+  const s=parts(start);
+  if(!end)return s.clock+s.period;
+  const e=parts(end);
+  return s.clock+(s.period!==e.period?s.period:'')+' – '+e.clock+e.period;
 }
 function calEvent(a,extra='',layout=null){
   const googleIndex=a.calendarId?googleEvents.indexOf(a):-1;
-  const label=(a.time?timeLabel(a.time)+' ':'')+a.title;
-  const color=eventColorStyle(a);
-  let style=color;
-  if(extra==='week-event'&&a.time){
+  const label=(a.time?timeLabel(a.time)+(a.endTime?' – '+timeLabel(a.endTime):'')+' ':'')+a.title;
+  const isWeek=extra==='week-event'&&a.time;
+  const monthTimed=calView==='Month'&&!!a.time;
+  let style=eventColorStyle(a,monthTimed);
+  let compact=false;
+  if(isWeek){
     const minutes=t=>{const [h,m]=t.split(':').map(Number);return h*60+m;};
-    const top=minutes(a.time)*.8;
+    const top=minutes(a.time);
     style+='top:'+top+'px;';
-    if(a.endTime)style+='height:'+Math.max(16,(minutes(a.endTime)-minutes(a.time))*.8)+'px;';
-    if(layout){style+='left:calc('+((layout.column/layout.columns)*100)+'% + 2px);right:auto;width:calc('+((layout.span/layout.columns)*100)+'% - 4px);height:'+Math.max(16,(layout.end-layout.start)*.8)+'px;min-height:0;box-sizing:border-box;';}
+    if(a.endTime)style+='height:'+Math.max(16,minutes(a.endTime)-minutes(a.time))+'px;';
+    if(layout){const height=Math.max(16,layout.end-layout.start);compact=height<38;style+='left:calc('+((layout.column/layout.columns)*100)+'% + 1px);right:auto;width:calc('+((layout.span/layout.columns)*100)+'% - 2px);height:'+height+'px;min-height:0;box-sizing:border-box;';}
   }
-  return '<'+(googleIndex>=0?'button type="button" data-google-details="'+googleIndex+'"':'div')+' class="cal-event '+a.kind+' '+extra+'" style="'+style+'" title="'+esc(label)+'">'+esc(label)+'</'+(googleIndex>=0?'button':'div')+'>';
+  const title='<span class="event-title">'+esc(a.title)+'</span>';
+  const time=a.time?'<span class="event-time">'+esc(googleTimeRange(a.time,a.endTime))+'</span>':'';
+  const content=monthTimed?'<span class="event-dot" style="background:'+calendarEventColor(a)+'"></span>'+time+' '+title:title+time;
+  return '<'+(googleIndex>=0?'button type="button" data-google-details="'+googleIndex+'"':'div')+' class="cal-event '+a.kind+' '+extra+(compact?' compact':'')+'" style="'+style+'" title="'+esc(label)+'">'+content+'</'+(googleIndex>=0?'button':'div')+'>';
 }
 function clockLine(){
   const p=easternParts(new Date()),[h,m]=p.time.split(':').map(Number),line=document.querySelector('.now-line');
-  if(line)line.style.top=((h*60+m)*.8)+'px';
+  if(line)line.style.top=(h*60+m)+'px';
   if(page==='Calendar'&&document.querySelector('[data-render-day]')?.dataset.renderDay!==easternToday())render();
 }
 function calendar(){
@@ -1289,9 +1339,9 @@ function calendar(){
   if(calView==='Month'){
     grid=`<div class="month-grid">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(v=>`<div class="weekday">${v}</div>`).join('')}${days.map(day=>`<div class="${day===easternToday()?'is-today':''} ${day.slice(0,7)!==first.slice(0,7)?'outside':''}"><span class="cal-date">${Number(day.slice(-2))}</span>${calItems(day).map(a=>calEvent(a)).join('')}</div>`).join('')}</div>`
   } else{
-    grid=`<div class="week-grid"><div class="week-head"></div>${days.map(day=>`<div class="week-head ${day===easternToday()?'is-today':''}">${dateObj(day).toLocaleDateString('en-CA',{weekday:'short'})}<br><span class="cal-date">${Number(day.slice(-2))}</span></div>`).join('')}<div class="week-all muted">All day</div>${days.map(day=>`<div class="week-all ${day===easternToday()?'is-today':''}">${calItems(day).filter(a=>!a.time).map(a=>calEvent(a)).join('')}</div>`).join('')}<div class="week-hours">${Array.from({length:24},(_,h)=>`<span class="hour-label" style="top:${h*48}px">${h%12||12} ${h<12?'AM':'PM'}</span>`).join('')}</div>${days.map(day=>`<div class="week-day ${day===easternToday()?'is-today':''}">${layoutWeekEvents(calItems(day).filter(a=>a.time)).map(item=>calEvent(item.a,'week-event',item)).join('')}${day===easternToday()?'<div class="now-line"></div>':''}</div>`).join('')}</div>`
+    grid=`<div class="week-grid"><div class="week-head"></div>${days.map(day=>`<div class="week-head ${day===easternToday()?'is-today':''}">${dateObj(day).toLocaleDateString('en-CA',{weekday:'short'})}<br><span class="cal-date">${Number(day.slice(-2))}</span></div>`).join('')}<div class="week-all muted">All day</div>${days.map(day=>`<div class="week-all ${day===easternToday()?'is-today':''}">${calItems(day).filter(a=>!a.time).map(a=>calEvent(a)).join('')}</div>`).join('')}<div class="week-hours">${Array.from({length:24},(_,h)=>`<span class="hour-label" style="top:${h*60}px">${h%12||12} ${h<12?'AM':'PM'}</span>`).join('')}</div>${days.map(day=>`<div class="week-day ${day===easternToday()?'is-today':''}">${layoutWeekEvents(calItems(day).filter(a=>a.time)).map(item=>calEvent(item.a,'week-event',item)).join('')}${day===easternToday()?'<div class="now-line"></div>':''}</div>`).join('')}</div>`
   }
-  return card('Schedule',`<div data-render-day="${easternToday()}" class="cal-toolbar"><div class="row"><button class="secondary" data-cal="-1">←</button><button class="secondary" data-cal="today">Today</button><button class="secondary" data-cal="1">→</button><strong>${title}</strong></div><div class="row"><button class="${calView==='Month'?'':'secondary'}" data-cal-view="Month">Month</button><button class="${calView==='Week'?'':'secondary'}" data-cal-view="Week">Week</button></div></div><div class="cal-scroll">${grid}</div><p class="muted">Blue: calendar · Green: university · Orange: work deadlines. Google events use Eastern time (Toronto). Click an event for details.</p>`)+googlePanel()+card(edit?.key==='calendar'?'Edit event':'Add event',form('calendar',field('Event','title',x.title||'','text','required')+field('Date','date',x.date||easternToday(),'date','required')+field('Time','time',x.time||'','time')+field('Location / notes','notes',x.notes||'')))+card('Events',table(['Date','Time','Event','Notes','Actions'],[...state.calendar].sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(timeLabel(a.time)||'—'),esc(a.title),esc(a.notes),controls('calendar',a.id)])))
+  return card('Schedule',`<div data-render-day="${easternToday()}" class="cal-toolbar"><div class="row"><button class="secondary" data-cal="-1">←</button><button class="secondary" data-cal="today">Today</button><button class="secondary" data-cal="1">→</button><strong>${title}</strong></div><div class="row"><button class="${calView==='Month'?'':'secondary'}" data-cal-view="Month">Month</button><button class="${calView==='Week'?'':'secondary'}" data-cal-view="Week">Week</button></div></div><div class="cal-scroll">${grid}</div><p class="muted">Google Calendar colours · Eastern time (Toronto) · Click a Google event for details.</p>`)+googlePanel()+card(edit?.key==='calendar'?'Edit event':'Add event',form('calendar',field('Event','title',x.title||'','text','required')+field('Date','date',x.date||easternToday(),'date','required')+field('Time','time',x.time||'','time')+field('Location / notes','notes',x.notes||'')))+card('Events',table(['Date','Time','Event','Notes','Actions'],[...state.calendar].sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(timeLabel(a.time)||'—'),esc(a.title),esc(a.notes),controls('calendar',a.id)])))
 }
 function vehicle(){
   const x=current('vehicle');
