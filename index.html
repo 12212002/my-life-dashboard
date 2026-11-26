@@ -1020,8 +1020,100 @@ function shiftDay(s,n){
 function weekStart(s){
   return shiftDay(s,-dateObj(s).getDay())
 }
+
+let googleToken='',googleCalendars=[],googleEvents=[],googleVisible=new Set(),googleMessage='',googleEdit=null,googleSession=0,googleFetchId=0,googleExpiry=0,googleBusy=false;
+const googleScopes='https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events';
+function googleDisconnect(revoke=true){
+  const token=googleToken;googleSession++;googleFetchId++;googleToken='';googleExpiry=0;googleCalendars=[];googleEvents=[];googleVisible.clear();googleEdit=null;googleMessage='';googleBusy=false;
+  if(revoke&&token&&window.google?.accounts?.oauth2)google.accounts.oauth2.revoke(token,()=>{});
+}
+async function googleRequest(path,options={}){
+  if(!googleToken||Date.now()>=googleExpiry)throw Error('Calendar authorization expired. Reconnect Google Calendar.');
+  const response=await fetch('https://www.googleapis.com/calendar/v3/'+path,{...options,headers:{Authorization:'Bearer '+googleToken,'Content-Type':'application/json',...(options.headers||{})}});
+  if(!response.ok)throw Error('Google Calendar request failed ('+response.status+'). Reconnect if authorization expired.');
+  return response.status===204?null:response.json();
+}
+async function googleList(path,params){
+  let items=[],next='';
+  do{const q=new URLSearchParams(params);if(next)q.set('pageToken',next);const data=await googleRequest(path+'?'+q);items.push(...(data.items||[]));next=data.nextPageToken||'';}while(next);
+  return items;
+}
+function googleConnect(){
+  if(!window.google?.accounts?.oauth2){googleMessage='Google sign-in library unavailable. Refresh and try again.';render();return;}
+  const session=++googleSession;
+  const client=google.accounts.oauth2.initTokenClient({client_id:CALENDAR_CLIENT_ID,scope:googleScopes,callback:async response=>{
+    if(session!==googleSession||!cloudReady)return;
+    if(response.error){googleMessage=response.error;render();return;}
+    googleToken=response.access_token;googleExpiry=Date.now()+Number(response.expires_in||3600)*1000-15000;
+    try{const list=await googleList('users/me/calendarList',{maxResults:'250'});if(session!==googleSession)return;googleCalendars=list;googleVisible=new Set(list.filter(x=>!x.hidden&&x.selected!==false).map(x=>x.id));await googleRefresh();}catch(e){if(session===googleSession){googleMessage=e.message;render();}}
+  },error_callback:e=>{if(session===googleSession){googleMessage=e.type||'Authorization failed';render();}}});
+  client.requestAccessToken({prompt:'consent'});
+}
+async function googleRefresh(){
+  if(!googleToken)return;
+  const session=googleSession,seq=++googleFetchId;
+  googleMessage='Loading calendar events…';if(page==='Calendar')render();
+  try{
+    const first=calAnchor.slice(0,7)+'-01',start=calView==='Week'?weekStart(calAnchor):weekStart(first),end=shiftDay(start,calView==='Week'?7:42);
+    const from=new Date(start+'T00:00:00').toISOString(),to=new Date(end+'T00:00:00').toISOString();
+    const batches=await Promise.allSettled(googleCalendars.map(async cal=>{
+      const items=await googleList('calendars/'+encodeURIComponent(cal.id)+'/events',{timeMin:from,timeMax:to,singleEvents:'true',orderBy:'startTime',maxResults:'250'});
+      return items.filter(e=>e.status!=='cancelled'&&e.start).flatMap(e=>{
+        const allDay=!!e.start.date,dt=allDay?null:new Date(e.start.dateTime),date=allDay?e.start.date:localDate(dt),time=allDay?'':String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
+        const base={id:e.id,calendarId:cal.id,calendarName:cal.summary,kind:'event',date,time,title:e.summary||'(Untitled)',notes:e.location||'',raw:e,editable:['owner','writer'].includes(cal.accessRole),color:cal.backgroundColor};
+        if(!allDay)return [base];
+        const rows=[];for(let d=date;d<(e.end?.date||shiftDay(date,1))&&d<end;d=shiftDay(d,1)){if(d>=start)rows.push({...base,date:d});}return rows;
+      });
+    }));
+    if(session!==googleSession||seq!==googleFetchId)return;
+    googleEvents=batches.filter(b=>b.status==='fulfilled').flatMap(b=>b.value);
+    googleMessage=batches.some(b=>b.status==='rejected')?'Some calendars could not be loaded. Refresh or reconnect.':'Google Calendar connected';
+  }catch(e){if(session===googleSession&&seq===googleFetchId)googleMessage=e.message;}
+  if(page==='Calendar'&&session===googleSession&&seq===googleFetchId)render();
+}
+function googlePanel(){
+  const btn=(action,label,idx='')=>'<button type="button" class="secondary" data-google-action="'+action+'" data-google-index="'+idx+'">'+label+'</button>';
+  if(!googleToken)return card('Google Calendar','<p class="muted">'+esc(googleMessage||'Connect your private Google calendars. Authorization stays in this browser session.')+'</p>'+btn('connect','Connect Google Calendar'));
+  const calendars=googleCalendars.map(a=>'<label style="display:flex;gap:8px;align-items:center"><input style="width:auto" type="checkbox" name="googleVisible" value="'+esc(a.id)+'" '+(googleVisible.has(a.id)?'checked':'')+'><span style="color:'+(/^#[0-9a-f]{6}$/i.test(a.backgroundColor||'')?a.backgroundColor:'inherit')+'">●</span>'+esc(a.summary)+'</label>').join('');
+  const unique=googleEvents.filter((a,i,arr)=>googleVisible.has(a.calendarId)&&arr.findIndex(b=>b.calendarId===a.calendarId&&b.id===a.id)===i);
+  const rows=unique.map(a=>[esc(a.date),esc(timeLabel(a.time)||'All day'),esc(a.title),esc(a.calendarName),a.editable?btn('edit','Edit',googleEvents.indexOf(a))+btn('delete','Delete',googleEvents.indexOf(a)):'Read only']);
+  const x=googleEdit?.raw||{}, writable=googleCalendars.filter(a=>['owner','writer'].includes(a.accessRole));
+  const start=x.start?.dateTime?new Date(x.start.dateTime):null,end=x.end?.dateTime?new Date(x.end.dateTime):null;
+  const localInput=d=>localDate(d)+'T'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  const isAll=!!x.start?.date;
+  const formHtml=writable.length?'<form id="googleEventForm"><label>Google calendar<select name="calendarId" '+(googleEdit?'disabled':'')+'>'+writable.map(a=>'<option value="'+esc(a.id)+'" '+(a.id===googleEdit?.calendarId?'selected':'')+'>'+esc(a.summary)+'</option>').join('')+'</select></label>'+field('Event title','summary',x.summary||'','text','required')+'<label><input type="checkbox" name="allDay" style="width:auto" '+(isAll?'checked':'')+'> All day (uses date only; end date is inclusive)</label>'+field('Start','start',start?localInput(start):(x.start?.date||today())+'T09:00','datetime-local','required')+field('End','end',end?localInput(end):(x.end?.date?shiftDay(x.end.date,-1):today())+'T10:00','datetime-local','required')+field('Location','location',x.location||'')+'<button type="button" data-google-action="save" '+(googleBusy?'disabled':'')+'>'+(googleEdit?'Save Google event':'Add Google event')+'</button> '+(googleEdit?btn('cancel','Cancel'):'')+'</form>':'<p>No writable calendars.</p>';
+  return card('Google Calendar','<p class="muted">'+esc(googleMessage)+'</p><div class="row">'+btn('refresh','Refresh')+btn('disconnect','Disconnect')+btn('connect','Reconnect')+'</div>'+calendars)+card(googleEdit?'Edit Google event':'Add Google event',formHtml)+card('Google events in this view',table(['Date','Time','Event','Calendar','Actions'],rows));
+}
+async function googleAction(action,index){
+  if(googleBusy)return;
+  try{
+    if(action==='connect'){googleConnect();return;}
+    if(action==='disconnect'){googleDisconnect();render();return;}
+    if(action==='refresh'){await googleRefresh();return;}
+    if(action==='cancel'){googleEdit=null;render();return;}
+    if(action==='edit'){googleEdit=googleEvents[Number(index)];render();return;}
+    if(action==='delete'){
+      const a=googleEvents[Number(index)];if(!a?.editable)return;
+      if(!confirm('Delete this event from Google Calendar? '+a.title))return;
+      googleBusy=true;
+      await googleRequest('calendars/'+encodeURIComponent(a.calendarId)+'/events/'+encodeURIComponent(a.id)+'?sendUpdates=none',{method:'DELETE'});await googleRefresh();return;
+    }
+    if(action==='save'){
+      const form=document.getElementById('googleEventForm');if(!form||!form.reportValidity())return;
+      const f=new FormData(form),a=googleEdit,id=a?.calendarId||f.get('calendarId'),all=f.has('allDay'),s=f.get('start'),e=f.get('end');
+      const body={summary:String(f.get('summary')).trim(),location:String(f.get('location')||'')};
+      if(!body.summary)throw Error('Enter an event title.');
+      if(all){if(e.slice(0,10)<s.slice(0,10))throw Error('End must not precede start.');body.start={date:s.slice(0,10)};body.end={date:shiftDay(e.slice(0,10),1)};}
+      else{if(new Date(e)<=new Date(s))throw Error('End must be after start.');body.start={dateTime:new Date(s).toISOString()};body.end={dateTime:new Date(e).toISOString()};}
+      const path='calendars/'+encodeURIComponent(id)+'/events'+(a?'/'+encodeURIComponent(a.id):'')+'?sendUpdates=none';
+      googleBusy=true;await googleRequest(path,{method:a?'PATCH':'POST',body:JSON.stringify(body)});googleEdit=null;await googleRefresh();
+    }
+  }catch(e){googleMessage=e.message;notify(e.message);}
+  finally{if(googleBusy){googleBusy=false;if(page==='Calendar')render();}}
+}
+
 function calItems(day){
-  return [...state.calendar.map(a=>({
+  return [...googleEvents.filter(a=>googleVisible.has(a.calendarId)),...state.calendar.map(a=>({
     ...a,kind:'event'
   })),...state.university.map(a=>({
     ...a,kind:'school',time:''
@@ -1061,7 +1153,7 @@ function calendar(){
   } else{
     grid=`<div class="week-grid"><div class="week-head"></div>${days.map(day=>`<div class="week-head ${day===today()?'is-today':''}">${dateObj(day).toLocaleDateString('en-CA',{weekday:'short'})}<br><span class="cal-date">${Number(day.slice(-2))}</span></div>`).join('')}<div class="week-all muted">All day</div>${days.map(day=>`<div class="week-all ${day===today()?'is-today':''}">${calItems(day).filter(a=>!a.time).map(a=>calEvent(a)).join('')}</div>`).join('')}<div class="week-hours">${Array.from({length:24},(_,h)=>`<span class="hour-label" style="top:${h*48}px">${h%12||12} ${h<12?'AM':'PM'}</span>`).join('')}</div>${days.map(day=>`<div class="week-day ${day===today()?'is-today':''}">${calItems(day).filter(a=>a.time).map(a=>{const [h,m]=a.time.split(':').map(Number);return calEvent(a,'week-event').replace(' title=',` style="top:${(h*60+m)*.8}px" title=`)}).join('')}${day===today()?'<div class="now-line"></div>':''}</div>`).join('')}</div>`
   }
-  return card('Schedule',`<div data-render-day="${today()}" class="cal-toolbar"><div class="row"><button class="secondary" data-cal="-1">←</button><button class="secondary" data-cal="today">Today</button><button class="secondary" data-cal="1">→</button><strong>${title}</strong></div><div class="row"><button class="${calView==='Month'?'':'secondary'}" data-cal-view="Month">Month</button><button class="${calView==='Week'?'':'secondary'}" data-cal-view="Week">Week</button></div></div><div class="cal-scroll">${grid}</div><p class="muted">Blue: calendar · Green: university · Orange: work deadlines. Timed events show their start time.</p>`)+card(edit?.key==='calendar'?'Edit event':'Add event',form('calendar',field('Event','title',x.title||'','text','required')+field('Date','date',x.date||today(),'date','required')+field('Time','time',x.time||'','time')+field('Location / notes','notes',x.notes||'')))+card('Events',table(['Date','Time','Event','Notes','Actions'],[...state.calendar].sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(timeLabel(a.time)||'—'),esc(a.title),esc(a.notes),controls('calendar',a.id)])))
+  return googlePanel()+card('Schedule',`<div data-render-day="${today()}" class="cal-toolbar"><div class="row"><button class="secondary" data-cal="-1">←</button><button class="secondary" data-cal="today">Today</button><button class="secondary" data-cal="1">→</button><strong>${title}</strong></div><div class="row"><button class="${calView==='Month'?'':'secondary'}" data-cal-view="Month">Month</button><button class="${calView==='Week'?'':'secondary'}" data-cal-view="Week">Week</button></div></div><div class="cal-scroll">${grid}</div><p class="muted">Blue: calendar · Green: university · Orange: work deadlines. Timed events show their start time.</p>`)+card(edit?.key==='calendar'?'Edit event':'Add event',form('calendar',field('Event','title',x.title||'','text','required')+field('Date','date',x.date||today(),'date','required')+field('Time','time',x.time||'','time')+field('Location / notes','notes',x.notes||'')))+card('Events',table(['Date','Time','Event','Notes','Actions'],[...state.calendar].sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(timeLabel(a.time)||'—'),esc(a.title),esc(a.notes),controls('calendar',a.id)])))
 }
 function vehicle(){
   const x=current('vehicle');
@@ -1149,6 +1241,7 @@ function bind(){
   };
   if(page==='Calendar'){
     clockLine();
+    const gf=document.getElementById('googleEventForm');if(gf)gf.onsubmit=e=>{e.preventDefault();googleAction('save');};
   }
   root.onchange=e=>{
     const el=e.target;
@@ -1161,6 +1254,7 @@ function bind(){
       render();
       return
     }
+    if(el.name==='googleVisible'){if(el.checked)googleVisible.add(el.value);else googleVisible.delete(el.value);render();return;}
     if(el.name==='activeSemester'){
       semesterId=el.value;
       courseFilter='';
@@ -1202,14 +1296,15 @@ function bind(){
       edit=null;
       render()
     }
+    if(b.dataset.googleAction){googleAction(b.dataset.googleAction,b.dataset.googleIndex);return;}
     if(b.dataset.cal){
       calAnchor=b.dataset.cal==='today'?today():calView==='Week'?shiftDay(calAnchor,7*Number(b.dataset.cal)):addMonths(calAnchor,Number(b.dataset.cal));
       calMonth=calAnchor.slice(0,7);
-      render()
+      render();if(googleToken)googleRefresh()
     }
     if(b.dataset.calView){
       calView=b.dataset.calView;
-      render()
+      render();if(googleToken)googleRefresh()
     }
     if(b.hasAttribute('data-clear-tx')){
       txFrom='';
@@ -1362,6 +1457,7 @@ function bind(){
 }
 setInterval(()=>{if(cloudReady && page==='Calendar')clockLine()},15000);
 </script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
@@ -1370,6 +1466,7 @@ import { getFirestore, doc, getDocFromServer, setDoc, onSnapshot } from "https:/
 const gate=$('authGate'), message=$('authMessage'), login=$('googleLogin'), status=$('cloudStatus');
 let unsubscribe=null,generation=0,pending=0,failed=false,queue=Promise.resolve(),lastRemote=null;
 function lock(msg){
+  googleDisconnect(false);
   cloudReady=false;cloudSave=null;
   document.body.classList.remove('authenticated');
   gate.hidden=false;message.textContent=msg;
