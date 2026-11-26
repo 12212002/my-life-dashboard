@@ -825,7 +825,7 @@ function go(p){
   page=p;
   edit=null;
   render();
-  if(p==='Calendar'&&googleToken)googleRefresh();
+  if(p==='Calendar'&&!googleRestoring){if(googleToken)googleRefresh();else googleRestore();}
 }
 function render(){
   document.body.classList.toggle('dark',state.theme==='dark');
@@ -1064,19 +1064,24 @@ function calendarDetails(index){
 
 let googleOwner='',googleAccountHint='';
 const calendarSessionKey='myLifeDashboard.calendarSession.v1';
+let googleRestoring=false;
+function calendarSaved(){try{return JSON.parse(sessionStorage.getItem(calendarSessionKey)||'null');}catch(e){return null;}}
 function googleStore(){
   if(!googleOwner||!googleToken)return;
-  try{sessionStorage.setItem(calendarSessionKey,JSON.stringify({owner:googleOwner,token:googleToken,expiry:googleExpiry,visible:[...googleVisible]}));}catch(e){}
+  const value=JSON.stringify({owner:googleOwner,token:googleToken,expiry:googleExpiry,visible:googleCalendars.length?[...googleVisible]:null});
+  try{sessionStorage.setItem(calendarSessionKey,value);}catch(e){}
 }
 function googleForget(){try{sessionStorage.removeItem(calendarSessionKey);}catch(e){}}
 async function googleRestore(){
-  let stored;
-  try{stored=JSON.parse(sessionStorage.getItem(calendarSessionKey)||'null');}catch(e){googleForget();return;}
+  if(googleRestoring||googleToken||!cloudReady)return;
+  const stored=calendarSaved();
   if(!stored)return;
-  if(stored.owner!==googleOwner||!stored.token||stored.expiry<=Date.now()){googleForget();return;}
+  if(stored.owner!==googleOwner||!stored.token||stored.expiry<=Date.now()){googleForget();googleMessage='Calendar authorization expired or belongs to another account. Reconnect Google Calendar.';if(page==='Calendar')render();return;}
+  googleRestoring=true;
   const session=++googleSession;
   googleToken=stored.token;googleExpiry=stored.expiry;
   googleMessage='Restoring Google Calendar…';
+  if(page==='Calendar')render();
   try{
     const list=await googleList('users/me/calendarList',{maxResults:'250'});
     if(session!==googleSession||!cloudReady)return;
@@ -1087,7 +1092,7 @@ async function googleRestore(){
     if(session!==googleSession)return;
     googleDisconnect(false);googleForget();googleMessage='Calendar session unavailable. Reconnect Google Calendar.';
     if(page==='Calendar')render();
-  }
+  }finally{googleRestoring=false;if(page==='Calendar'&&cloudReady)render();}
 }
 
 const googleScopes='https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events';
@@ -1115,12 +1120,14 @@ function googleConnect(){
     if(session!==googleSession||!cloudReady)return;
     if(response.error){googleMessage=response.error;render();return;}
     googleToken=response.access_token;googleExpiry=Date.now()+Number(response.expires_in||3600)*1000-15000;
+    googleStore();
     try{const list=await googleList('users/me/calendarList',{maxResults:'250'});if(session!==googleSession)return;googleCalendars=list;googleVisible=new Set(list.filter(x=>!x.hidden&&x.selected!==false).map(x=>x.id));googleStore();await googleRefresh();}catch(e){if(session===googleSession){googleMessage=e.message;render();}}
   },error_callback:e=>{if(session===googleSession){googleMessage=e.type||'Authorization failed';render();}}});
   client.requestAccessToken({prompt:''});
 }
 async function googleRefresh(){
   if(!googleToken)return;
+  if(Date.now()>=googleExpiry){googleForget();googleDisconnect(false);googleMessage='Calendar authorization expired. Reconnect Google Calendar.';if(page==='Calendar')render();return;}
   const session=googleSession,seq=++googleFetchId;
   googleMessage='Loading calendar events…';if(page==='Calendar')render();
   try{
@@ -1605,13 +1612,13 @@ try{
     if(pending||failed){notify('Cloud save pending or failed. Export a backup before leaving.');return;}
     try{googleDisconnect();googleForget();await signOut(auth)}catch(e){notify(e.message)}
   };
-  $('gateLogout').onclick=()=>signOut(auth).catch(e=>{message.textContent=e.message;});
+  $('gateLogout').onclick=()=>{googleDisconnect();googleForget();return signOut(auth).catch(e=>{message.textContent=e.message;});};
   onAuthStateChanged(auth,async user=>{
     const session=++generation;
     if(unsubscribe){unsubscribe();unsubscribe=null;}
     lock(user?'Checking private database access…':'Sign in to continue.');
     login.hidden=!!user;login.disabled=!!user;$('gateLogout').hidden=!user;
-    if(!user){googleForget();googleOwner='';googleAccountHint='';return;}
+    if(!user){if(googleOwner)googleForget();googleOwner='';googleAccountHint='';return;}
     googleOwner=user.uid;googleAccountHint=user.email||'';
     const ref=doc(db,'users',user.uid,'dashboard','state');
     try{
