@@ -1133,7 +1133,7 @@ async function googleRestore(){
   }finally{googleRestoring=false;if(page==='Calendar'&&cloudReady)render();}
 }
 
-const googleScopes='https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events';
+const googleScopes='https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.calendars.readonly';
 function googleDisconnect(revoke=true){
   const token=googleToken;googleSession++;googleFetchId++;googleToken='';googleExpiry=0;googleCalendars=[];googleEvents=[];googleVisible.clear();googleEdit=null;googleMessage='';googleBusy=false;
   if(revoke)googleForget();
@@ -1141,7 +1141,7 @@ function googleDisconnect(revoke=true){
 }
 async function googleRequest(path,options={}){
   if(!googleToken||Date.now()>=googleExpiry){googleForget();googleDisconnect(false);throw Error('Calendar authorization expired. Reconnect Google Calendar.');}
-  const response=await fetch('https://www.googleapis.com/calendar/v3/'+path,{...options,headers:{Authorization:'Bearer '+googleToken,'Content-Type':'application/json',...(options.headers||{})}});
+  const response=await fetch('https://www.googleapis.com/calendar/v3/'+path,{...options,cache:'no-store',headers:{Authorization:'Bearer '+googleToken,'Content-Type':'application/json',...(options.headers||{})}});
   if(response.status===401){googleForget();googleDisconnect(false);googleMessage='Calendar authorization expired. Reconnect Google Calendar.';if(page==='Calendar')render();throw Error(googleMessage);}
   if(!response.ok)throw Error('Google Calendar request failed ('+response.status+').');
   return response.status===204?null:response.json();
@@ -1174,11 +1174,22 @@ async function googleRefresh(){
     const [palette,latestCalendars]=await Promise.all([googleRequest('colors').catch(()=>null),googleList('users/me/calendarList',{maxResults:'250'}).catch(()=>null)]);
     if(session!==googleSession||seq!==googleFetchId)return;
     if(latestCalendars){const known=new Set(googleCalendars.map(a=>a.id));for(const cal of latestCalendars)if(!known.has(cal.id)&&!cal.hidden&&cal.selected!==false)googleVisible.add(cal.id);googleCalendars=latestCalendars;googleStore();}
+    let customColorsIncomplete=false;
     const batches=await Promise.allSettled(googleCalendars.map(async cal=>{
-      const items=await googleList('calendars/'+encodeURIComponent(cal.id)+'/events',{timeMin:from,timeMax:to,singleEvents:'true',orderBy:'startTime',maxResults:'250',timeZone:calendarZone});
+      const path='calendars/'+encodeURIComponent(cal.id);
+      const params={timeMin:from,timeMax:to,singleEvents:'true',orderBy:'startTime',maxResults:'250',timeZone:calendarZone};
+      const [legacy,modern,metadata]=await Promise.all([
+        googleList(path+'/events',params),
+        googleList(path+'/events',{...params,eventLabelVersion:'1'}).catch(()=>null),
+        googleRequest(path).catch(()=>null)
+      ]);
+      const labels=new Map((metadata?.labelProperties?.eventLabels||[]).map(x=>[x.id,x.backgroundColor]));
+      const byId=new Map(legacy.map(e=>[e.id,e]));
+      const items=(modern||legacy).map(e=>({...e,resolvedColor:labels.get(e.eventLabelId)||palette?.event?.[byId.get(e.id)?.colorId||e.colorId]?.background}));
+      if(!metadata||!modern||items.some(e=>e.eventLabelId&&!labels.has(e.eventLabelId)))customColorsIncomplete=true;
       return items.filter(e=>e.status!=='cancelled'&&e.start).flatMap(e=>{
         const allDay=!!e.start.date,dt=allDay?null:new Date(e.start.dateTime),date=allDay?e.start.date:easternParts(dt).date,time=allDay?'':easternParts(dt).time;
-        const base={id:e.id,calendarId:cal.id,calendarName:cal.summary,kind:'event',date,time,title:e.summary||'(Untitled)',notes:e.location||'',raw:e,editable:['owner','writer'].includes(cal.accessRole),color:cal.backgroundColor||palette?.calendar?.[cal.colorId]?.background,eventColor:palette?.event?.[e.colorId]?.background};
+        const base={id:e.id,calendarId:cal.id,calendarName:cal.summary,kind:'event',date,time,title:e.summary||'(Untitled)',notes:e.location||'',raw:e,editable:['owner','writer'].includes(cal.accessRole),color:cal.backgroundColor||palette?.calendar?.[cal.colorId]?.background,eventColor:e.resolvedColor};
         if(!allDay){
           const finish=e.end?.dateTime?new Date(e.end.dateTime):new Date(dt.getTime()+30*60000);
           const ep=easternParts(finish),segments=[];
@@ -1193,10 +1204,12 @@ async function googleRefresh(){
     }));
     if(session!==googleSession||seq!==googleFetchId)return;
     googleEvents=batches.filter(b=>b.status==='fulfilled').flatMap(b=>b.value);
-    googleMessage=batches.some(b=>b.status==='rejected')?'Some calendars could not be loaded. Refresh or reconnect.':(!palette?'Google Calendar connected — individual event colours unavailable. Refresh to retry.':'Google Calendar connected');
+    googleMessage=batches.some(b=>b.status==='rejected')?'Some calendars could not be loaded. Refresh or reconnect.':(!palette?'Google Calendar connected — standard colour palette unavailable. Refresh to retry.':customColorsIncomplete?'Connected — some custom colours unavailable. Reconnect to grant calendar metadata permission.':'Google Calendar connected');
   }catch(e){if(session===googleSession&&seq===googleFetchId)googleMessage=e.message;}
   if(page==='Calendar'&&session===googleSession&&seq===googleFetchId)render();
 }
+let calendarLastFocusRefresh=0;
+window.addEventListener('focus',()=>{if(cloudReady&&page==='Calendar'&&googleToken&&!googleRestoring&&!googleBusy&&!googleEdit&&Date.now()-calendarLastFocusRefresh>15000){const form=document.getElementById('googleEventForm');if(form&&[...form.elements].some(el=>el.name==='summary'&&el.value.trim()))return;calendarLastFocusRefresh=Date.now();googleRefresh();}});
 function googlePanel(){
   const btn=(action,label,idx='')=>'<button type="button" class="secondary" data-google-action="'+action+'" data-google-index="'+idx+'">'+label+'</button>';
   if(!googleToken)return card('Google Calendar','<p class="muted">'+esc(googleMessage||'Connect your private Google calendars. Your connection is remembered in this tab until Google authorization expires.')+'</p>'+btn('connect','Connect Google Calendar'));
@@ -1229,7 +1242,7 @@ async function googleAction(action,index){
       if(!body.summary)throw Error('Enter an event title.');
       if(all){if(e.slice(0,10)<s.slice(0,10))throw Error('End must not precede start.');body.start={date:s.slice(0,10)};body.end={date:shiftDay(e.slice(0,10),1)};}
       else{const si=easternInstant(s),ei=easternInstant(e);if(ei<=si)throw Error('End must be after start.');body.start={dateTime:si,timeZone:calendarZone};body.end={dateTime:ei,timeZone:calendarZone};}
-      const path='calendars/'+encodeURIComponent(id)+'/events'+(a?'/'+encodeURIComponent(a.id):'')+'?sendUpdates=none';
+      const path='calendars/'+encodeURIComponent(id)+'/events'+(a?'/'+encodeURIComponent(a.id):'')+'?sendUpdates=none&eventLabelVersion=1';
       googleBusy=true;await googleRequest(path,{method:a?'PATCH':'POST',body:JSON.stringify(body)});googleEdit=null;await googleRefresh();
     }
   }catch(e){googleMessage=e.message;notify(e.message);}
