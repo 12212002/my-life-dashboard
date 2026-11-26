@@ -760,6 +760,8 @@ body.dark .cal-scroll{--calendar-grid:#3c4043;--calendar-bg:#202124;--calendar-t
 .cal-scroll .hour-label:first-child{transform:none}
 .cal-scroll .cal-event{border:0;border-radius:5px;box-sizing:border-box;text-align:left;line-height:1.18;font-family:inherit;font-size:12px;font-weight:400;box-shadow:none;margin:2px 0;padding:3px 6px;overflow:hidden;white-space:normal;overflow-wrap:anywhere}
 .cal-scroll button.cal-event{width:100%;min-height:0;cursor:pointer;display:block}
+.cal-scroll button.cal-event.week-event{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;text-align:left}
+.cal-scroll button.cal-event.week-event.compact{display:block}
 .cal-scroll .cal-event:hover{filter:brightness(.94)}
 .cal-scroll .week-event{position:absolute;display:block;margin:0;min-height:0;padding:4px 6px;border:1px solid var(--calendar-bg);border-radius:5px}
 .cal-scroll .event-title{display:block;font-weight:600;line-height:1.2}
@@ -1266,6 +1268,26 @@ function layoutWeekEvents(events){
     let group=[],groupEnd=-1;
     function finish(){
       if(!group.length)return;
+      // Brief boundary overlaps: keep cards wide, with later events slightly inset.
+      const brief=(a,b)=>{
+        const shared=Math.min(a.end,b.end)-Math.max(a.start,b.start);
+        return shared>0&&shared<=15&&shared<=.2*Math.min(a.end-a.start,b.end-b.start);
+      };
+      const pairs=group.flatMap((a,i)=>group.slice(i+1).filter(b=>overlaps(a,b)).map(b=>[a,b]));
+      const triple=group.some(a=>group.filter(b=>b!==a&&b.start<=a.start&&b.end>a.start).length>=2);
+      if(group.length>1&&pairs.length&&!triple&&pairs.every(([a,b])=>brief(a,b))){
+        for(const item of group){
+          const inset=group.some(p=>p.start<item.start&&overlaps(p,item)) ? .05 : 0;
+          item.left=left+width*inset;item.width=width*(1-inset);item.layer=layer+(inset?1:0);
+          const children=sorted.filter(x=>x.parent===item);
+          if(children.length){
+            const childLeft=item.left+item.width*.48,childWidth=item.width*.52;
+            item.width*=.86;
+            place(children,childLeft,childWidth,item.layer+1);
+          }
+        }
+        group=[];groupEnd=-1;return;
+      }
       const ends=[];
       for(const item of group){
         let col=ends.findIndex(end=>end<=item.start);
