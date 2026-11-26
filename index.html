@@ -776,7 +776,7 @@ body.dark .cal-scroll{--calendar-grid:#3c4043;--calendar-bg:#202124;--calendar-t
 .cal-scroll .month-grid .outside{opacity:1;color:var(--calendar-muted)}
 .cal-scroll .month-grid .outside .cal-date{color:var(--calendar-muted)}
 .cal-scroll .month-grid .is-today{background:transparent}
-.cal-scroll .now-line{background:#ea4335;height:2px}
+.cal-scroll .now-line{background:#ea4335;height:2px;z-index:40}
 .cal-scroll .now-line:before{background:#ea4335;width:10px;height:10px;top:-4px;left:-5px}
 .cal-scroll .week-day.is-today{background-color:var(--calendar-bg)}
 
@@ -1253,31 +1253,53 @@ function layoutWeekEvents(events){
   const sorted=events.map(a=>{
     const start=minutes(a.time);
     const end=Math.min(1440,Math.max(start+20,a.endTime?minutes(a.endTime):start+35));
-    return {a,start,end,column:0,columns:1,span:1};
+    return {a,start,end,left:0,width:100,layer:1,parent:null};
   }).sort((a,b)=>a.start-b.start||b.end-a.end);
-  let group=[],groupEnd=-1;
-  function finish(){
-    if(!group.length)return;
-    const ends=[];
-    for(const item of group){
-      let column=ends.findIndex(end=>end<=item.start);
-      if(column<0)column=ends.length;
-      item.column=column;ends[column]=item.end;
-    }
-    for(const item of group){
-      item.columns=ends.length;
-      for(let col=item.column+1;col<ends.length;col++){
-        if(group.some(other=>other.column===col&&other.start<item.end&&other.end>item.start))break;
-        item.span++;
+  const overlaps=(a,b)=>a.start<b.end&&b.start<a.end;
+  // Strict containment only: equal-duration simultaneous events still split normally.
+  for(let i=0;i<sorted.length;i++){
+    const item=sorted[i];
+    const parents=sorted.slice(0,i).filter(p=>p.start<=item.start&&p.end>=item.end&&(p.start<item.start||p.end>item.end));
+    item.parent=parents.sort((a,b)=>(a.end-a.start)-(b.end-b.start))[0]||null;
+  }
+  function place(items,left,width,layer){
+    let group=[],groupEnd=-1;
+    function finish(){
+      if(!group.length)return;
+      const ends=[];
+      for(const item of group){
+        let col=ends.findIndex(end=>end<=item.start);
+        if(col<0)col=ends.length;
+        item.column=col;ends[col]=item.end;
       }
+      for(const item of group){
+        let span=1;
+        for(let col=item.column+1;col<ends.length;col++){
+          if(group.some(other=>other.column===col&&overlaps(item,other)))break;
+          span++;
+        }
+        const slot=width/ends.length;
+        item.left=left+item.column*slot;
+        item.width=span*slot;
+        item.layer=layer;
+        const children=sorted.filter(x=>x.parent===item);
+        if(children.length){
+          // Leave a visible portion of the containing event; children overlay its right side.
+          const childLeft=item.left+item.width*.48;
+          const childWidth=item.width*.52;
+          item.width*=.86;
+          place(children,childLeft,childWidth,layer+1);
+        }
+      }
+      group=[];groupEnd=-1;
     }
-    group=[];groupEnd=-1;
+    for(const item of items){
+      if(item.start>=groupEnd)finish();
+      group.push(item);groupEnd=Math.max(groupEnd,item.end);
+    }
+    finish();
   }
-  for(const item of sorted){
-    if(item.start>=groupEnd)finish();
-    group.push(item);groupEnd=Math.max(groupEnd,item.end);
-  }
-  finish();
+  place(sorted.filter(x=>!x.parent),0,100,1);
   return sorted;
 }
 function validCalendarColor(value){return typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value);}
@@ -1288,7 +1310,8 @@ function eventColorStyle(a,monthTimed=false){
   const bg=calendarEventColor(a);
   const rgb=[1,3,5].map(i=>parseInt(bg.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4));
   const lum=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];
-  return monthTimed?'background:transparent;color:var(--calendar-text);':'background:'+bg+';color:'+(lum>.38?'#202124':'#ffffff')+';';
+  const stripe=a.calendarId&&validCalendarColor(a.color)&&validCalendarColor(a.eventColor)&&a.color.toLowerCase()!==bg.toLowerCase()?'border-left:4px solid '+a.color+';':'';
+  return monthTimed?'background:transparent;color:var(--calendar-text);':'background:'+bg+';color:'+(lum>.38?'#202124':'#ffffff')+';'+stripe;
 }
 function googleTimeRange(start,end){
   if(!start)return '';
@@ -1310,7 +1333,7 @@ function calEvent(a,extra='',layout=null){
     const top=minutes(a.time);
     style+='top:'+top+'px;';
     if(a.endTime)style+='height:'+Math.max(16,minutes(a.endTime)-minutes(a.time))+'px;';
-    if(layout){const height=Math.max(16,layout.end-layout.start);compact=height<38;style+='left:calc('+((layout.column/layout.columns)*100)+'% + 1px);right:auto;width:calc('+((layout.span/layout.columns)*100)+'% - 2px);height:'+height+'px;min-height:0;box-sizing:border-box;';}
+    if(layout){const height=Math.max(16,layout.end-layout.start);compact=height<38;style+='left:calc('+layout.left+'% + 1px);right:auto;width:calc('+layout.width+'% - 2px);height:'+height+'px;min-height:0;box-sizing:border-box;z-index:'+Math.min(layout.layer,30)+';';}
   }
   const title='<span class="event-title">'+esc(a.title)+'</span>';
   const time=a.time?'<span class="event-time">'+esc(googleTimeRange(a.time,a.endTime))+'</span>':'';
