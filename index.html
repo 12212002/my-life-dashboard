@@ -824,7 +824,8 @@ function notify(s){
 function go(p){
   page=p;
   edit=null;
-  render()
+  render();
+  if(p==='Calendar'&&googleToken)googleRefresh();
 }
 function render(){
   document.body.classList.toggle('dark',state.theme==='dark');
@@ -1060,15 +1061,46 @@ function calendarDetails(index){
   overlay.append(panel);document.body.append(overlay);
 }
 
+
+let googleOwner='',googleAccountHint='';
+const calendarSessionKey='myLifeDashboard.calendarSession.v1';
+function googleStore(){
+  if(!googleOwner||!googleToken)return;
+  try{sessionStorage.setItem(calendarSessionKey,JSON.stringify({owner:googleOwner,token:googleToken,expiry:googleExpiry,visible:[...googleVisible]}));}catch(e){}
+}
+function googleForget(){try{sessionStorage.removeItem(calendarSessionKey);}catch(e){}}
+async function googleRestore(){
+  let stored;
+  try{stored=JSON.parse(sessionStorage.getItem(calendarSessionKey)||'null');}catch(e){googleForget();return;}
+  if(!stored)return;
+  if(stored.owner!==googleOwner||!stored.token||stored.expiry<=Date.now()){googleForget();return;}
+  const session=++googleSession;
+  googleToken=stored.token;googleExpiry=stored.expiry;
+  googleMessage='Restoring Google Calendar…';
+  try{
+    const list=await googleList('users/me/calendarList',{maxResults:'250'});
+    if(session!==googleSession||!cloudReady)return;
+    googleCalendars=list;
+    googleVisible=new Set(Array.isArray(stored.visible)?stored.visible:list.filter(x=>!x.hidden&&x.selected!==false).map(x=>x.id));
+    await googleRefresh();
+  }catch(e){
+    if(session!==googleSession)return;
+    googleDisconnect(false);googleForget();googleMessage='Calendar session unavailable. Reconnect Google Calendar.';
+    if(page==='Calendar')render();
+  }
+}
+
 const googleScopes='https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events';
 function googleDisconnect(revoke=true){
   const token=googleToken;googleSession++;googleFetchId++;googleToken='';googleExpiry=0;googleCalendars=[];googleEvents=[];googleVisible.clear();googleEdit=null;googleMessage='';googleBusy=false;
+  if(revoke)googleForget();
   if(revoke&&token&&window.google?.accounts?.oauth2)google.accounts.oauth2.revoke(token,()=>{});
 }
 async function googleRequest(path,options={}){
-  if(!googleToken||Date.now()>=googleExpiry)throw Error('Calendar authorization expired. Reconnect Google Calendar.');
+  if(!googleToken||Date.now()>=googleExpiry){googleForget();googleDisconnect(false);throw Error('Calendar authorization expired. Reconnect Google Calendar.');}
   const response=await fetch('https://www.googleapis.com/calendar/v3/'+path,{...options,headers:{Authorization:'Bearer '+googleToken,'Content-Type':'application/json',...(options.headers||{})}});
-  if(!response.ok)throw Error('Google Calendar request failed ('+response.status+'). Reconnect if authorization expired.');
+  if(response.status===401){googleForget();googleDisconnect(false);googleMessage='Calendar authorization expired. Reconnect Google Calendar.';if(page==='Calendar')render();throw Error(googleMessage);}
+  if(!response.ok)throw Error('Google Calendar request failed ('+response.status+').');
   return response.status===204?null:response.json();
 }
 async function googleList(path,params){
@@ -1079,13 +1111,13 @@ async function googleList(path,params){
 function googleConnect(){
   if(!window.google?.accounts?.oauth2){googleMessage='Google sign-in library unavailable. Refresh and try again.';render();return;}
   const session=++googleSession;
-  const client=google.accounts.oauth2.initTokenClient({client_id:CALENDAR_CLIENT_ID,scope:googleScopes,callback:async response=>{
+  const client=google.accounts.oauth2.initTokenClient({client_id:CALENDAR_CLIENT_ID,scope:googleScopes,login_hint:googleAccountHint||undefined,callback:async response=>{
     if(session!==googleSession||!cloudReady)return;
     if(response.error){googleMessage=response.error;render();return;}
     googleToken=response.access_token;googleExpiry=Date.now()+Number(response.expires_in||3600)*1000-15000;
-    try{const list=await googleList('users/me/calendarList',{maxResults:'250'});if(session!==googleSession)return;googleCalendars=list;googleVisible=new Set(list.filter(x=>!x.hidden&&x.selected!==false).map(x=>x.id));await googleRefresh();}catch(e){if(session===googleSession){googleMessage=e.message;render();}}
+    try{const list=await googleList('users/me/calendarList',{maxResults:'250'});if(session!==googleSession)return;googleCalendars=list;googleVisible=new Set(list.filter(x=>!x.hidden&&x.selected!==false).map(x=>x.id));googleStore();await googleRefresh();}catch(e){if(session===googleSession){googleMessage=e.message;render();}}
   },error_callback:e=>{if(session===googleSession){googleMessage=e.type||'Authorization failed';render();}}});
-  client.requestAccessToken({prompt:'consent'});
+  client.requestAccessToken({prompt:''});
 }
 async function googleRefresh(){
   if(!googleToken)return;
@@ -1119,7 +1151,7 @@ async function googleRefresh(){
 }
 function googlePanel(){
   const btn=(action,label,idx='')=>'<button type="button" class="secondary" data-google-action="'+action+'" data-google-index="'+idx+'">'+label+'</button>';
-  if(!googleToken)return card('Google Calendar','<p class="muted">'+esc(googleMessage||'Connect your private Google calendars. Authorization stays in this browser session.')+'</p>'+btn('connect','Connect Google Calendar'));
+  if(!googleToken)return card('Google Calendar','<p class="muted">'+esc(googleMessage||'Connect your private Google calendars. Your connection is remembered in this tab until Google authorization expires.')+'</p>'+btn('connect','Connect Google Calendar'));
   const calendars=googleCalendars.map(a=>'<label style="display:flex;gap:8px;align-items:center"><input style="width:auto" type="checkbox" name="googleVisible" value="'+esc(a.id)+'" '+(googleVisible.has(a.id)?'checked':'')+'><span style="color:'+(/^#[0-9a-f]{6}$/i.test(a.backgroundColor||'')?a.backgroundColor:'inherit')+'">●</span>'+esc(a.summary)+'</label>').join('');
   const x=googleEdit?.raw||{}, writable=googleCalendars.filter(a=>['owner','writer'].includes(a.accessRole));
   const start=x.start?.dateTime?new Date(x.start.dateTime):null,end=x.end?.dateTime?new Date(x.end.dateTime):null;
@@ -1341,7 +1373,7 @@ function bind(){
       render();
       return
     }
-    if(el.name==='googleVisible'){if(el.checked)googleVisible.add(el.value);else googleVisible.delete(el.value);render();return;}
+    if(el.name==='googleVisible'){if(el.checked)googleVisible.add(el.value);else googleVisible.delete(el.value);googleStore();render();return;}
     if(el.name==='activeSemester'){
       semesterId=el.value;
       courseFilter='';
@@ -1571,7 +1603,7 @@ try{
   };
   $('cloudLogout').onclick=async()=>{
     if(pending||failed){notify('Cloud save pending or failed. Export a backup before leaving.');return;}
-    try{await signOut(auth)}catch(e){notify(e.message)}
+    try{googleDisconnect();googleForget();await signOut(auth)}catch(e){notify(e.message)}
   };
   $('gateLogout').onclick=()=>signOut(auth).catch(e=>{message.textContent=e.message;});
   onAuthStateChanged(auth,async user=>{
@@ -1579,7 +1611,8 @@ try{
     if(unsubscribe){unsubscribe();unsubscribe=null;}
     lock(user?'Checking private database access…':'Sign in to continue.');
     login.hidden=!!user;login.disabled=!!user;$('gateLogout').hidden=!user;
-    if(!user)return;
+    if(!user){googleForget();googleOwner='';googleAccountHint='';return;}
+    googleOwner=user.uid;googleAccountHint=user.email||'';
     const ref=doc(db,'users',user.uid,'dashboard','state');
     try{
       const snapshot=await getDocFromServer(ref);
@@ -1604,7 +1637,7 @@ try{
           finally{if(session===generation){pending--;status.textContent=failed?'Save failed — export backup':pending?'Saving to cloud…':'Saved to cloud';}}
         });
       };
-      gate.hidden=true;document.body.classList.add('authenticated');status.textContent='Cloud connected';render();
+      gate.hidden=true;document.body.classList.add('authenticated');status.textContent='Cloud connected';render();googleRestore();
       try{
         const raw=localStorage.getItem('myLifeDashboard.v1');
         $('oldBackup').hidden=!raw;
