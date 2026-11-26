@@ -1133,11 +1133,14 @@ async function googleRefresh(){
   try{
     const first=calAnchor.slice(0,7)+'-01',start=calView==='Week'?weekStart(calAnchor):weekStart(first),end=shiftDay(start,calView==='Week'?7:42);
     const from=easternInstant(start+'T00:00'),to=easternInstant(end+'T00:00');
+    const [palette,latestCalendars]=await Promise.all([googleRequest('colors').catch(()=>null),googleList('users/me/calendarList',{maxResults:'250'}).catch(()=>null)]);
+    if(session!==googleSession||seq!==googleFetchId)return;
+    if(latestCalendars){const known=new Set(googleCalendars.map(a=>a.id));for(const cal of latestCalendars)if(!known.has(cal.id)&&!cal.hidden&&cal.selected!==false)googleVisible.add(cal.id);googleCalendars=latestCalendars;googleStore();}
     const batches=await Promise.allSettled(googleCalendars.map(async cal=>{
       const items=await googleList('calendars/'+encodeURIComponent(cal.id)+'/events',{timeMin:from,timeMax:to,singleEvents:'true',orderBy:'startTime',maxResults:'250',timeZone:calendarZone});
       return items.filter(e=>e.status!=='cancelled'&&e.start).flatMap(e=>{
         const allDay=!!e.start.date,dt=allDay?null:new Date(e.start.dateTime),date=allDay?e.start.date:easternParts(dt).date,time=allDay?'':easternParts(dt).time;
-        const base={id:e.id,calendarId:cal.id,calendarName:cal.summary,kind:'event',date,time,title:e.summary||'(Untitled)',notes:e.location||'',raw:e,editable:['owner','writer'].includes(cal.accessRole),color:cal.backgroundColor};
+        const base={id:e.id,calendarId:cal.id,calendarName:cal.summary,kind:'event',date,time,title:e.summary||'(Untitled)',notes:e.location||'',raw:e,editable:['owner','writer'].includes(cal.accessRole),color:cal.backgroundColor||palette?.calendar?.[cal.colorId]?.background,eventColor:palette?.event?.[e.colorId]?.background};
         if(!allDay){
           const finish=e.end?.dateTime?new Date(e.end.dateTime):new Date(dt.getTime()+30*60000);
           const ep=easternParts(finish),segments=[];
@@ -1152,7 +1155,7 @@ async function googleRefresh(){
     }));
     if(session!==googleSession||seq!==googleFetchId)return;
     googleEvents=batches.filter(b=>b.status==='fulfilled').flatMap(b=>b.value);
-    googleMessage=batches.some(b=>b.status==='rejected')?'Some calendars could not be loaded. Refresh or reconnect.':'Google Calendar connected';
+    googleMessage=batches.some(b=>b.status==='rejected')?'Some calendars could not be loaded. Refresh or reconnect.':(!palette?'Google Calendar connected — individual event colours unavailable. Refresh to retry.':'Google Calendar connected');
   }catch(e){if(session===googleSession&&seq===googleFetchId)googleMessage=e.message;}
   if(page==='Calendar'&&session===googleSession&&seq===googleFetchId)render();
 }
@@ -1241,10 +1244,19 @@ function layoutWeekEvents(events){
   finish();
   return sorted;
 }
+function validCalendarColor(value){return typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value);}
+function eventColorStyle(a){
+  if(!a.calendarId)return '';
+  const stripe=validCalendarColor(a.color)?a.color:'#4285f4';
+  const bg=validCalendarColor(a.eventColor)?a.eventColor:stripe;
+  const rgb=[1,3,5].map(i=>parseInt(bg.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4));
+  const lum=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];
+  return 'background:'+bg+';border-left:4px solid '+stripe+';color:'+(lum>.179?'#111111':'#ffffff')+';';
+}
 function calEvent(a,extra='',layout=null){
   const googleIndex=a.calendarId?googleEvents.indexOf(a):-1;
   const label=(a.time?timeLabel(a.time)+' ':'')+a.title;
-  const color=/^#[0-9a-f]{6}$/i.test(a.color||'')?'border-left:4px solid '+a.color+';':'';
+  const color=eventColorStyle(a);
   let style=color;
   if(extra==='week-event'&&a.time){
     const minutes=t=>{const [h,m]=t.split(':').map(Number);return h*60+m;};
