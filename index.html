@@ -742,6 +742,8 @@ h1 {
 
 
 }
+button.cal-event{display:block;text-align:left;width:calc(100% - 6px);font:inherit;font-size:12px;cursor:pointer;white-space:normal;overflow-wrap:anywhere;color:var(--text);border:0;border-radius:4px;padding:3px 5px}
+button.cal-event.week-event{width:auto;min-height:16px}
 </style>
 </head>
 <body>
@@ -1022,6 +1024,42 @@ function weekStart(s){
 }
 
 let googleToken='',googleCalendars=[],googleEvents=[],googleVisible=new Set(),googleMessage='',googleEdit=null,googleSession=0,googleFetchId=0,googleExpiry=0,googleBusy=false;
+
+const calendarZone='America/Toronto';
+function easternParts(d){
+  const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:calendarZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(d).map(x=>[x.type,x.value]));
+  return {date:p.year+'-'+p.month+'-'+p.day,time:p.hour+':'+p.minute};
+}
+function easternToday(){return easternParts(new Date()).date;}
+function easternInstant(value){
+  const wanted=Date.parse(value.length===16?value+':00Z':value+'Z');
+  if(!Number.isFinite(wanted))throw Error('Invalid date or time.');
+  let guess=wanted;
+  for(let i=0;i<4;i++){
+    const p=easternParts(new Date(guess));
+    const diff=wanted-Date.parse(p.date+'T'+p.time+':00Z');
+    if(!diff)return new Date(guess).toISOString();
+    guess+=diff;
+  }
+  throw Error('That local time does not exist in Toronto. Choose a different time.');
+}
+function calendarDetails(index){
+  const a=googleEvents[index];if(!a)return;
+  const old=document.getElementById('googleDetails');if(old)old.remove();
+  const overlay=document.createElement('div');overlay.id='googleDetails';overlay.className='delete-overlay';
+  const panel=document.createElement('section');panel.className='card delete-box';
+  const title=document.createElement('h2');title.textContent=a.title;panel.append(title);
+  for(const value of [a.calendarName,a.date+(a.time?' · '+timeLabel(a.time)+(a.endTime?' – '+timeLabel(a.endTime):''):' · All day'),a.notes]){
+    if(value){const p=document.createElement('p');p.textContent=value;panel.append(p);}
+  }
+  const close=document.createElement('button');close.className='secondary';close.textContent='Close';close.onclick=()=>overlay.remove();panel.append(close);
+  if(a.editable){
+    const editButton=document.createElement('button');editButton.textContent='Edit';editButton.onclick=()=>{overlay.remove();googleAction('edit',index);document.getElementById('googleEventForm')?.scrollIntoView({block:'center'});};panel.append(editButton);
+    const del=document.createElement('button');del.className='secondary';del.textContent='Delete';del.onclick=()=>{overlay.remove();googleAction('delete',index);};panel.append(del);
+  }
+  overlay.append(panel);document.body.append(overlay);
+}
+
 const googleScopes='https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events';
 function googleDisconnect(revoke=true){
   const token=googleToken;googleSession++;googleFetchId++;googleToken='';googleExpiry=0;googleCalendars=[];googleEvents=[];googleVisible.clear();googleEdit=null;googleMessage='';googleBusy=false;
@@ -1055,13 +1093,21 @@ async function googleRefresh(){
   googleMessage='Loading calendar events…';if(page==='Calendar')render();
   try{
     const first=calAnchor.slice(0,7)+'-01',start=calView==='Week'?weekStart(calAnchor):weekStart(first),end=shiftDay(start,calView==='Week'?7:42);
-    const from=new Date(start+'T00:00:00').toISOString(),to=new Date(end+'T00:00:00').toISOString();
+    const from=easternInstant(start+'T00:00'),to=easternInstant(end+'T00:00');
     const batches=await Promise.allSettled(googleCalendars.map(async cal=>{
-      const items=await googleList('calendars/'+encodeURIComponent(cal.id)+'/events',{timeMin:from,timeMax:to,singleEvents:'true',orderBy:'startTime',maxResults:'250'});
+      const items=await googleList('calendars/'+encodeURIComponent(cal.id)+'/events',{timeMin:from,timeMax:to,singleEvents:'true',orderBy:'startTime',maxResults:'250',timeZone:calendarZone});
       return items.filter(e=>e.status!=='cancelled'&&e.start).flatMap(e=>{
-        const allDay=!!e.start.date,dt=allDay?null:new Date(e.start.dateTime),date=allDay?e.start.date:localDate(dt),time=allDay?'':String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
+        const allDay=!!e.start.date,dt=allDay?null:new Date(e.start.dateTime),date=allDay?e.start.date:easternParts(dt).date,time=allDay?'':easternParts(dt).time;
         const base={id:e.id,calendarId:cal.id,calendarName:cal.summary,kind:'event',date,time,title:e.summary||'(Untitled)',notes:e.location||'',raw:e,editable:['owner','writer'].includes(cal.accessRole),color:cal.backgroundColor};
-        if(!allDay)return [base];
+        if(!allDay){
+          const finish=e.end?.dateTime?new Date(e.end.dateTime):new Date(dt.getTime()+30*60000);
+          const ep=easternParts(finish),segments=[];
+          for(let day=date;day<=ep.date&&day<end;day=shiftDay(day,1)){
+            if(day<start||(day===ep.date&&day!==date&&ep.time==='00:00'))continue;
+            segments.push({...base,date:day,time:day===date?time:'00:00',endTime:day===ep.date?ep.time:'24:00'});
+          }
+          return segments;
+        }
         const rows=[];for(let d=date;d<(e.end?.date||shiftDay(date,1))&&d<end;d=shiftDay(d,1)){if(d>=start)rows.push({...base,date:d});}return rows;
       });
     }));
@@ -1075,14 +1121,12 @@ function googlePanel(){
   const btn=(action,label,idx='')=>'<button type="button" class="secondary" data-google-action="'+action+'" data-google-index="'+idx+'">'+label+'</button>';
   if(!googleToken)return card('Google Calendar','<p class="muted">'+esc(googleMessage||'Connect your private Google calendars. Authorization stays in this browser session.')+'</p>'+btn('connect','Connect Google Calendar'));
   const calendars=googleCalendars.map(a=>'<label style="display:flex;gap:8px;align-items:center"><input style="width:auto" type="checkbox" name="googleVisible" value="'+esc(a.id)+'" '+(googleVisible.has(a.id)?'checked':'')+'><span style="color:'+(/^#[0-9a-f]{6}$/i.test(a.backgroundColor||'')?a.backgroundColor:'inherit')+'">●</span>'+esc(a.summary)+'</label>').join('');
-  const unique=googleEvents.filter((a,i,arr)=>googleVisible.has(a.calendarId)&&arr.findIndex(b=>b.calendarId===a.calendarId&&b.id===a.id)===i);
-  const rows=unique.map(a=>[esc(a.date),esc(timeLabel(a.time)||'All day'),esc(a.title),esc(a.calendarName),a.editable?btn('edit','Edit',googleEvents.indexOf(a))+btn('delete','Delete',googleEvents.indexOf(a)):'Read only']);
   const x=googleEdit?.raw||{}, writable=googleCalendars.filter(a=>['owner','writer'].includes(a.accessRole));
   const start=x.start?.dateTime?new Date(x.start.dateTime):null,end=x.end?.dateTime?new Date(x.end.dateTime):null;
-  const localInput=d=>localDate(d)+'T'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  const localInput=d=>{const p=easternParts(d);return p.date+'T'+p.time;};
   const isAll=!!x.start?.date;
   const formHtml=writable.length?'<form id="googleEventForm"><label>Google calendar<select name="calendarId" '+(googleEdit?'disabled':'')+'>'+writable.map(a=>'<option value="'+esc(a.id)+'" '+(a.id===googleEdit?.calendarId?'selected':'')+'>'+esc(a.summary)+'</option>').join('')+'</select></label>'+field('Event title','summary',x.summary||'','text','required')+'<label><input type="checkbox" name="allDay" style="width:auto" '+(isAll?'checked':'')+'> All day (uses date only; end date is inclusive)</label>'+field('Start','start',start?localInput(start):(x.start?.date||today())+'T09:00','datetime-local','required')+field('End','end',end?localInput(end):(x.end?.date?shiftDay(x.end.date,-1):today())+'T10:00','datetime-local','required')+field('Location','location',x.location||'')+'<button type="button" data-google-action="save" '+(googleBusy?'disabled':'')+'>'+(googleEdit?'Save Google event':'Add Google event')+'</button> '+(googleEdit?btn('cancel','Cancel'):'')+'</form>':'<p>No writable calendars.</p>';
-  return card('Google Calendar','<p class="muted">'+esc(googleMessage)+'</p><div class="row">'+btn('refresh','Refresh')+btn('disconnect','Disconnect')+btn('connect','Reconnect')+'</div>'+calendars)+card(googleEdit?'Edit Google event':'Add Google event',formHtml)+card('Google events in this view',table(['Date','Time','Event','Calendar','Actions'],rows));
+  return card('Google Calendar','<p class="muted">'+esc(googleMessage)+'</p><div class="row">'+btn('refresh','Refresh')+btn('disconnect','Disconnect')+btn('connect','Reconnect')+'</div>'+calendars)+card(googleEdit?'Edit Google event':'Add Google event',formHtml);
 }
 async function googleAction(action,index){
   if(googleBusy)return;
@@ -1104,7 +1148,7 @@ async function googleAction(action,index){
       const body={summary:String(f.get('summary')).trim(),location:String(f.get('location')||'')};
       if(!body.summary)throw Error('Enter an event title.');
       if(all){if(e.slice(0,10)<s.slice(0,10))throw Error('End must not precede start.');body.start={date:s.slice(0,10)};body.end={date:shiftDay(e.slice(0,10),1)};}
-      else{if(new Date(e)<=new Date(s))throw Error('End must be after start.');body.start={dateTime:new Date(s).toISOString()};body.end={dateTime:new Date(e).toISOString()};}
+      else{const si=easternInstant(s),ei=easternInstant(e);if(ei<=si)throw Error('End must be after start.');body.start={dateTime:si,timeZone:calendarZone};body.end={dateTime:ei,timeZone:calendarZone};}
       const path='calendars/'+encodeURIComponent(id)+'/events'+(a?'/'+encodeURIComponent(a.id):'')+'?sendUpdates=none';
       googleBusy=true;await googleRequest(path,{method:a?'PATCH':'POST',body:JSON.stringify(body)});googleEdit=null;await googleRefresh();
     }
@@ -1127,12 +1171,22 @@ function timeLabel(t){
   return `${h%12||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`
 }
 function calEvent(a,extra=''){
-  return `<div class="cal-event ${a.kind} ${extra}" title="${esc((a.time?timeLabel(a.time)+' ':'')+a.title)}">${a.time?esc(timeLabel(a.time))+' ':''}${esc(a.title)}</div>`
+  const googleIndex=a.calendarId?googleEvents.indexOf(a):-1;
+  const label=(a.time?timeLabel(a.time)+' ':'')+a.title;
+  const color=/^#[0-9a-f]{6}$/i.test(a.color||'')?'border-left:4px solid '+a.color+';':'';
+  let style=color;
+  if(extra==='week-event'&&a.time){
+    const minutes=t=>{const [h,m]=t.split(':').map(Number);return h*60+m;};
+    const top=minutes(a.time)*.8;
+    style+='top:'+top+'px;';
+    if(a.endTime)style+='height:'+Math.max(16,(minutes(a.endTime)-minutes(a.time))*.8)+'px;';
+  }
+  return '<'+(googleIndex>=0?'button type="button" data-google-details="'+googleIndex+'"':'div')+' class="cal-event '+a.kind+' '+extra+'" style="'+style+'" title="'+esc(label)+'">'+esc(label)+'</'+(googleIndex>=0?'button':'div')+'>';
 }
 function clockLine(){
-  const d=new Date(),line=document.querySelector('.now-line');
-  if(line)line.style.top=((d.getHours()*60+d.getMinutes())*.8)+'px';
-  if(page==='Calendar'&&document.querySelector('[data-render-day]')?.dataset.renderDay!==today())render()
+  const p=easternParts(new Date()),[h,m]=p.time.split(':').map(Number),line=document.querySelector('.now-line');
+  if(line)line.style.top=((h*60+m)*.8)+'px';
+  if(page==='Calendar'&&document.querySelector('[data-render-day]')?.dataset.renderDay!==easternToday())render();
 }
 function calendar(){
   const x=current('calendar'),d=dateObj(calAnchor),first=calAnchor.slice(0,7)+'-01',start=weekStart(calView==='Month'?first:calAnchor),days=calView==='Month'?Array.from({
@@ -1149,11 +1203,11 @@ function calendar(){
   });
   let grid;
   if(calView==='Month'){
-    grid=`<div class="month-grid">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(v=>`<div class="weekday">${v}</div>`).join('')}${days.map(day=>`<div class="${day===today()?'is-today':''} ${day.slice(0,7)!==first.slice(0,7)?'outside':''}"><span class="cal-date">${Number(day.slice(-2))}</span>${calItems(day).map(a=>calEvent(a)).join('')}</div>`).join('')}</div>`
+    grid=`<div class="month-grid">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(v=>`<div class="weekday">${v}</div>`).join('')}${days.map(day=>`<div class="${day===easternToday()?'is-today':''} ${day.slice(0,7)!==first.slice(0,7)?'outside':''}"><span class="cal-date">${Number(day.slice(-2))}</span>${calItems(day).map(a=>calEvent(a)).join('')}</div>`).join('')}</div>`
   } else{
-    grid=`<div class="week-grid"><div class="week-head"></div>${days.map(day=>`<div class="week-head ${day===today()?'is-today':''}">${dateObj(day).toLocaleDateString('en-CA',{weekday:'short'})}<br><span class="cal-date">${Number(day.slice(-2))}</span></div>`).join('')}<div class="week-all muted">All day</div>${days.map(day=>`<div class="week-all ${day===today()?'is-today':''}">${calItems(day).filter(a=>!a.time).map(a=>calEvent(a)).join('')}</div>`).join('')}<div class="week-hours">${Array.from({length:24},(_,h)=>`<span class="hour-label" style="top:${h*48}px">${h%12||12} ${h<12?'AM':'PM'}</span>`).join('')}</div>${days.map(day=>`<div class="week-day ${day===today()?'is-today':''}">${calItems(day).filter(a=>a.time).map(a=>{const [h,m]=a.time.split(':').map(Number);return calEvent(a,'week-event').replace(' title=',` style="top:${(h*60+m)*.8}px" title=`)}).join('')}${day===today()?'<div class="now-line"></div>':''}</div>`).join('')}</div>`
+    grid=`<div class="week-grid"><div class="week-head"></div>${days.map(day=>`<div class="week-head ${day===easternToday()?'is-today':''}">${dateObj(day).toLocaleDateString('en-CA',{weekday:'short'})}<br><span class="cal-date">${Number(day.slice(-2))}</span></div>`).join('')}<div class="week-all muted">All day</div>${days.map(day=>`<div class="week-all ${day===easternToday()?'is-today':''}">${calItems(day).filter(a=>!a.time).map(a=>calEvent(a)).join('')}</div>`).join('')}<div class="week-hours">${Array.from({length:24},(_,h)=>`<span class="hour-label" style="top:${h*48}px">${h%12||12} ${h<12?'AM':'PM'}</span>`).join('')}</div>${days.map(day=>`<div class="week-day ${day===easternToday()?'is-today':''}">${calItems(day).filter(a=>a.time).map(a=>{const [h,m]=a.time.split(':').map(Number);return calEvent(a,'week-event')}).join('')}${day===easternToday()?'<div class="now-line"></div>':''}</div>`).join('')}</div>`
   }
-  return googlePanel()+card('Schedule',`<div data-render-day="${today()}" class="cal-toolbar"><div class="row"><button class="secondary" data-cal="-1">←</button><button class="secondary" data-cal="today">Today</button><button class="secondary" data-cal="1">→</button><strong>${title}</strong></div><div class="row"><button class="${calView==='Month'?'':'secondary'}" data-cal-view="Month">Month</button><button class="${calView==='Week'?'':'secondary'}" data-cal-view="Week">Week</button></div></div><div class="cal-scroll">${grid}</div><p class="muted">Blue: calendar · Green: university · Orange: work deadlines. Timed events show their start time.</p>`)+card(edit?.key==='calendar'?'Edit event':'Add event',form('calendar',field('Event','title',x.title||'','text','required')+field('Date','date',x.date||today(),'date','required')+field('Time','time',x.time||'','time')+field('Location / notes','notes',x.notes||'')))+card('Events',table(['Date','Time','Event','Notes','Actions'],[...state.calendar].sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(timeLabel(a.time)||'—'),esc(a.title),esc(a.notes),controls('calendar',a.id)])))
+  return card('Schedule',`<div data-render-day="${easternToday()}" class="cal-toolbar"><div class="row"><button class="secondary" data-cal="-1">←</button><button class="secondary" data-cal="today">Today</button><button class="secondary" data-cal="1">→</button><strong>${title}</strong></div><div class="row"><button class="${calView==='Month'?'':'secondary'}" data-cal-view="Month">Month</button><button class="${calView==='Week'?'':'secondary'}" data-cal-view="Week">Week</button></div></div><div class="cal-scroll">${grid}</div><p class="muted">Blue: calendar · Green: university · Orange: work deadlines. Google events use Eastern time (Toronto). Click an event for details.</p>`)+googlePanel()+card(edit?.key==='calendar'?'Edit event':'Add event',form('calendar',field('Event','title',x.title||'','text','required')+field('Date','date',x.date||easternToday(),'date','required')+field('Time','time',x.time||'','time')+field('Location / notes','notes',x.notes||'')))+card('Events',table(['Date','Time','Event','Notes','Actions'],[...state.calendar].sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(timeLabel(a.time)||'—'),esc(a.title),esc(a.notes),controls('calendar',a.id)])))
 }
 function vehicle(){
   const x=current('vehicle');
@@ -1296,9 +1350,10 @@ function bind(){
       edit=null;
       render()
     }
+    if(b.hasAttribute('data-google-details')){calendarDetails(Number(b.dataset.googleDetails));return;}
     if(b.dataset.googleAction){googleAction(b.dataset.googleAction,b.dataset.googleIndex);return;}
     if(b.dataset.cal){
-      calAnchor=b.dataset.cal==='today'?today():calView==='Week'?shiftDay(calAnchor,7*Number(b.dataset.cal)):addMonths(calAnchor,Number(b.dataset.cal));
+      calAnchor=b.dataset.cal==='today'?easternToday():calView==='Week'?shiftDay(calAnchor,7*Number(b.dataset.cal)):addMonths(calAnchor,Number(b.dataset.cal));
       calMonth=calAnchor.slice(0,7);
       render();if(googleToken)googleRefresh()
     }
