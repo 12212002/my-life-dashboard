@@ -765,6 +765,7 @@ body.dark .cal-scroll{--calendar-grid:#3c4043;--calendar-bg:#202124;--calendar-t
 .cal-scroll .cal-event:hover{filter:brightness(.94)}
 .cal-scroll .week-event{position:absolute;display:block;margin:0;min-height:0;padding:4px 6px;border:1px solid var(--calendar-bg);border-radius:5px}
 .cal-scroll .event-title{color:inherit!important;display:block;font-weight:600;line-height:1.2}
+.cal-scroll .event-location{color:inherit!important;display:block;font-size:11px;line-height:1.15;overflow-wrap:anywhere}
 .cal-scroll .event-time{color:inherit!important;display:block;font-size:11px;font-weight:400;line-height:1.15;margin-top:2px}
 .cal-scroll .week-event.compact .event-title,.cal-scroll .week-event.compact .event-time{display:inline;margin:0;font-size:11px}
 .cal-scroll .week-event.compact{padding:2px 4px}
@@ -1281,6 +1282,27 @@ function layoutWeekEvents(events){
     let group=[],groupEnd=-1;
     function finish(){
       if(!group.length)return;
+      // Foreground siblings inside a long event can use the whole parent day band
+      // when they overlap at their edges, instead of splitting an already narrow band.
+      if(group.length>=2 && group.every(x=>x.parent&&x.parent===group[0].parent)){
+        const parent=group[0].parent;
+        const dayLeft=parent.bandLeft??0,dayWidth=parent.bandWidth??100;
+        const pairs=group.flatMap((a,i)=>group.slice(i+1).filter(b=>overlaps(a,b)).map(b=>[a,b]));
+        const peak=group.reduce((n,a)=>Math.max(n,group.filter(b=>b.start<=a.start&&b.end>a.start).length),0);
+        if(pairs.length&&peak<=2&&pairs.every(([a,b])=>Math.abs(a.start-b.start)>=15&&Math.min(a.end,b.end)-Math.max(a.start,b.start)<=.75*Math.min(a.end-a.start,b.end-b.start))){
+          parent.left=dayLeft;parent.width=dayWidth*.54;
+          for(let i=0;i<group.length;i++){
+            const item=group[i];
+            const later=group.slice(0,i).some(p=>overlaps(p,item));
+            const inset=later?.10:.05;
+            item.left=dayLeft+dayWidth*inset;item.width=dayWidth*(.95-inset);item.layer=layer+(later?1:0);
+            item.bandLeft=item.left;item.bandWidth=item.width;
+            const children=sorted.filter(x=>x.parent===item);
+            if(children.length)place(children,item.left+item.width*.48,item.width*.52,item.layer+1);
+          }
+          group=[];groupEnd=-1;return;
+        }
+      }
       // Long anchor events with short overlaps at their boundaries retain a broad card.
       if(group.length===2){
         const [a,b]=group;
@@ -1288,7 +1310,7 @@ function layoutWeekEvents(events){
         const short=long===a?b:a;
         const shared=Math.min(long.end,short.end)-Math.max(long.start,short.start);
         if(shared>0&&(long.end-long.start)>=2.5*(short.end-short.start)&&shared<=60){
-          long.left=left;long.width=width*.86;long.layer=layer;
+          long.left=left;long.width=width*.86;long.layer=layer;long.bandLeft=left;long.bandWidth=width;
           short.left=left+width*.48;short.width=width*.52;short.layer=layer+1;
           for(const item of group){
             const children=sorted.filter(x=>x.parent===item);
@@ -1359,6 +1381,7 @@ function layoutWeekEvents(events){
         item.left=left+item.column*slot;
         item.width=span*slot;
         item.layer=layer;
+        item.bandLeft=item.left;item.bandWidth=item.width;
         const children=sorted.filter(x=>x.parent===item);
         if(children.length){
           // Leave a visible portion of the containing event; children overlay its right side.
@@ -1412,7 +1435,8 @@ function calEvent(a,extra='',layout=null){
   }
   const title='<span class="event-title">'+esc(a.title)+'</span>';
   const time=a.time?'<span class="event-time">'+esc(googleTimeRange(a.time,a.endTime))+'</span>':'';
-  const content=monthTimed?'<span class="event-dot" style="background:'+calendarEventColor(a)+'"></span>'+time+' '+title:title+time;
+  const location=isWeek&&!compact&&a.notes?'<span class="event-location">'+esc(a.notes)+'</span>':'';
+  const content=monthTimed?'<span class="event-dot" style="background:'+calendarEventColor(a)+'"></span>'+time+' '+title:title+time+location;
   return '<'+(googleIndex>=0?'button type="button" data-google-details="'+googleIndex+'"':'div')+' class="cal-event '+a.kind+' '+extra+(compact?' compact':'')+'" style="'+style+'" title="'+esc(label)+'">'+content+'</'+(googleIndex>=0?'button':'div')+'>';
 }
 function clockLine(){
