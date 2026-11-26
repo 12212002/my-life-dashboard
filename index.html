@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
 <!-- FIREBASE CONFIGURATION START — replace only the object below -->
 <script>
 const firebaseConfig = {
@@ -11,19 +13,1349 @@ const firebaseConfig = {
 };
 </script>
 <!-- FIREBASE CONFIGURATION END -->
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#111827"><title>My Life Dashboard</title><style>
-*{box-sizing:border-box} :root{--bg:#f4f6fa;--panel:#fff;--text:#182238;--muted:#66758b;--line:#e0e5ed;--accent:#4263eb;--green:#15805d;--red:#c53945} body.dark{--bg:#101624;--panel:#1b2537;--text:#eff4ff;--muted:#a6b4c9;--line:#354157;--accent:#8398ff;--green:#52d3a2;--red:#ff8993}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,sans-serif}aside{position:fixed;inset:0 auto 0 0;width:230px;background:#142037;color:#fff;padding:24px 16px;overflow:auto}aside h2{font-size:19px;margin:0 0 8px}aside small{color:#a6b4c9}nav{margin-top:28px;display:grid;gap:5px}nav button{background:none;text-align:left;color:#c8d3e6;border:0;padding:12px;border-radius:9px;font-size:15px}nav button.active,nav button:hover{background:#2c4164;color:white}main{margin-left:230px;padding:32px;max-width:1500px}h1{margin:0;font-size:30px}h2{font-size:19px;margin:0 0 14px}h3{font-size:16px}p{line-height:1.5} .muted,small{color:var(--muted)}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;gap:12px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px;min-width:0}.metric{font-size:28px;font-weight:750;margin-top:8px;overflow-wrap:anywhere}.green{color:var(--green)}.red{color:var(--red)}button,input,select,textarea{font:inherit}button{cursor:pointer;border:0;border-radius:8px;padding:10px 14px;background:var(--accent);color:white;font-weight:600}button.secondary{background:var(--bg);color:var(--text);border:1px solid var(--line)}button.danger{color:var(--red);background:transparent;border:1px solid var(--line)}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}label{display:grid;gap:6px;font-size:13px;color:var(--muted);font-weight:600}input,select,textarea{width:100%;min-width:0;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:11px;font-size:16px}textarea{min-height:100px;resize:vertical}.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;align-items:end}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;white-space:nowrap}th,td{padding:12px 9px;text-align:left;border-bottom:1px solid var(--line)}th{color:var(--muted);font-size:12px;text-transform:uppercase}td button{padding:6px 9px;margin-right:4px;font-size:12px}.bar{height:9px;background:var(--line);border-radius:8px;overflow:hidden;margin:7px 0 15px}.bar div{height:100%;background:var(--accent)}.tile{cursor:pointer;text-align:left;color:var(--text);width:100%;font-weight:400}.tile:hover{border-color:var(--accent)}.tile strong{display:block;font-size:17px;margin:10px 0 5px}.tile span{font-size:24px}.empty{padding:18px 0;color:var(--muted)}.notice{padding:12px;background:var(--bg);border-radius:8px;font-size:13px;color:var(--muted)}a{color:var(--accent)}.calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}.day{min-height:80px;border:1px solid var(--line);border-radius:8px;padding:6px;font-size:12px;overflow-wrap:anywhere}.day.today{border:2px solid var(--accent)}.day span{display:block;background:var(--bg);margin-top:4px;padding:3px;border-radius:4px}.row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}#toast{position:fixed;bottom:18px;right:18px;background:#182238;color:white;padding:12px 18px;border-radius:8px;display:none;z-index:20} @media(max-width:760px){aside{position:static;width:auto;padding:14px}aside small{display:none}nav{display:flex;overflow:auto;margin-top:12px}nav button{white-space:nowrap;padding:9px}main{margin:0;padding:16px}h1{font-size:24px}.card{padding:15px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.metric{font-size:21px}.day{min-height:60px;padding:3px}.top{margin-bottom:15px}}@media(max-width:370px){.grid{grid-template-columns:1fr}}
-.form-error{margin-top:12px;font-weight:600}.form-error[hidden]{display:none}.delete-overlay{position:fixed;inset:0;z-index:9999;background:#0008;display:grid;place-items:center;padding:20px}.delete-box{width:min(420px,100%);background:var(--card,#fff);margin:0;box-sizing:border-box}.dark .delete-box{background:#172033;color:#fff} [data-work-status]{min-width:125px;width:auto}.pass-course{border-top:1px solid var(--line);padding:16px 0}.pass-course .metric{font-size:22px}.pass-course label{max-width:420px;margin:12px 0}.pass-course .grid{margin-top:12px}
-.work-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}.work-stat{padding:14px;border:1px solid var(--line);border-radius:12px}.work-stat strong{display:block;font-size:24px;margin-top:4px}.work-progress{height:12px;background:var(--line);border-radius:20px;overflow:hidden;margin-top:10px}.work-progress div{height:100%;background:var(--green);transition:width .2s}.task-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.task-card{border:1px solid var(--line);border-radius:12px;padding:15px;display:grid;gap:10px;align-content:start}.task-card.done{opacity:.72}.task-card.done h3{text-decoration:line-through}.task-card h3{margin:0;overflow-wrap:anywhere}.task-card p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}.pill{font-size:12px;padding:4px 8px;border-radius:20px;background:var(--bg);font-weight:600}.task-card .actions{margin-top:0}.task-card select{width:100%}.cal-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}.cal-toolbar .row{justify-content:start}.cal-scroll{overflow:auto}.month-grid{min-width:620px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-left:1px solid var(--line);border-top:1px solid var(--line)}.month-grid>div{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px;min-height:105px;overflow-wrap:anywhere}.month-grid>.weekday{min-height:0;text-align:center;color:var(--muted);font-size:12px}.cal-date{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;font-weight:650}.is-today{background:color-mix(in srgb,var(--accent) 8%,var(--panel))}.is-today .cal-date{background:var(--accent);color:white}.outside{opacity:.5}.cal-event{display:block;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--panel));border-radius:4px;padding:4px 6px;margin-top:4px;font-size:12px;overflow-wrap:anywhere}.cal-event.school{border-color:#16a34a}.cal-event.work{border-color:#e59a29}.week-grid{display:grid;grid-template-columns:58px repeat(7,minmax(94px,1fr));min-width:735px}.week-head{padding:8px;text-align:center;border:1px solid var(--line);font-size:12px}.week-all{min-height:42px;padding:4px;border:1px solid var(--line);font-size:12px}.week-hours,.week-day{position:relative;height:1152px;border-right:1px solid var(--line)}.week-day{background-image:repeating-linear-gradient(to bottom, var(--line) 0px,var(--line) 1px,transparent 1px,transparent 48px)}.hour-label{position:absolute;right:7px;font-size:11px;color:var(--muted)}.week-event{position:absolute;left:3px;right:3px;margin:0;min-height:28px;z-index:1;overflow:hidden}.now-line{position:absolute;left:0;right:0;height:2px;background:#ef4444;z-index:4;pointer-events:none}.now-line:before{content:'';position:absolute;left:-4px;top:-3px;width:8px;height:8px;background:#ef4444;border-radius:50%}.filterbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:12px}.filterbar label{flex:1;min-width:130px}.filterbar button{flex:none}.filter-summary{margin:10px 0;color:var(--muted);font-size:13px}@media(max-width:760px){.work-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.task-list{grid-template-columns:1fr}}
-</style></head><body><aside><h2>◈ My Life Dashboard</h2><small>Your personal workspace</small><nav id="nav"></nav></aside><main><div class="top"><div><h1 id="heading"></h1><div class="muted" id="today"></div></div><button class="secondary" id="theme">◐ Theme</button></div><div id="content"></div></main><div id="toast" role="status"></div><script>
-'use strict';const $=id=>document.getElementById(id), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])), money=n=>new Intl.NumberFormat('en-CA',{style:'currency',currency:'CAD'}).format(n), localDate=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`, today=()=>localDate(new Date()), dateObj=s=>new Date(s+'T12:00:00'), uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2), num=v=>Number(v), sum=a=>a.reduce((s,x)=>s+x,0);const defaults=()=>({transactions:[],university:[],semesters:[],courses:[],work:[],calendar:[],vehicle:[],knowledge:[],links:[],opening:0,theme:'light',budget:20,projection:12});let state=defaults(),storageOK=true;try{const saved=localStorage.getItem('myLifeDashboard.v1');if(saved)state={...state,...JSON.parse(saved)}}catch(e){storageOK=false}let page='Home',edit=null,month=today().slice(0,7),calMonth=today().slice(0,7);let semesterId='',courseFilter='';function migrateUniversity(){if(!state.semesters.length&&state.university.length){const sem={id:uid(),title:'Previous assessments'};state.semesters.push(sem);for(const a of state.university){let c=state.courses.find(c=>c.semesterId===sem.id&&c.title===a.course);if(!c){c={id:uid(),semesterId:sem.id,title:a.course||'Unnamed course'};state.courses.push(c)}a.courseId=c.id;a.semesterId=sem.id}}if(!state.semesters.some(s=>s.id===semesterId))semesterId=state.semesters.at(-1)?.id||'';if(!state.courses.some(c=>c.id===courseFilter&&c.semesterId===semesterId))courseFilter=''}migrateUniversity();const sections=[['Home','⌂','Your daily overview'],['University','🎓','Grades, exams & assignments'],['Work','▤','Tasks & follow-ups'],['Calendar','▦','Schedule & deadlines'],['Finances','$','Income, expenses & projections'],['Vehicle','🚘','Maintenance & mileage'],['Knowledge Base','▧','Notes & procedures'],['Quick Links','↗','Frequently visited websites'],['Settings','⚙','Preferences & appearance']];function save(){try{localStorage.setItem('myLifeDashboard.v1',JSON.stringify(state));storageOK=true}catch(e){storageOK=false;notify('Local saving failed. Export a backup in Settings.')}}function notify(s){$('toast').textContent=s;$('toast').style.display='block';clearTimeout(notify.timer);notify.timer=setTimeout(()=>$('toast').style.display='none',3500)}function go(p){page=p;edit=null;render()}function render(){document.body.classList.toggle('dark',state.theme==='dark');$('heading').textContent=page==='Home'?'Overview':page;$('today').textContent=new Date().toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric',year:'numeric'});$('nav').innerHTML=sections.map(([n,i])=>`<button data-page="${esc(n)}" class="${page===n?'active':''}">${i} &nbsp;${n}</button>`).join('');$('nav').querySelectorAll('button').forEach(b=>b.onclick=()=>go(b.dataset.page));$('content').innerHTML=(!storageOK?'<p class="notice">Browser storage is unavailable. Export a backup before closing.</p>':'')+({Home:home,Finances:finance,University:university,Work:work,Calendar:calendar,Vehicle:vehicle,'Knowledge Base':knowledge,'Quick Links':links,Settings:settings}[page])();bind()}$('theme').onclick=()=>{state.theme=state.theme==='dark'?'light':'dark';save();render()};function card(title,body){return `<section class="card"><h2>${title}</h2>${body}</section>`}function metric(label,value,cls=''){return `<div class="card"><div class="muted">${label}</div><div class="metric ${cls}">${value}</div></div>`}function field(label,name,value='',type='text',extra=''){return `<label>${label}<input name="${name}" type="${type}" value="${esc(value)}" ${extra}></label>`}function number(label,name,value='',integer=false,negative=false){return field(label,name,value,'text',`inputmode="${integer?'numeric':'decimal'}" autocomplete="off" required`)}function select(label,name,opts,value){return `<label>${label}<select name="${name}">${opts.map(x=>`<option ${x===value?'selected':''}>${esc(x)}</option>`).join('')}</select></label>`}function form(key,fields){return `<form data-form="${key}" novalidate><div class="formgrid">${fields}</div><div class="form-error red" role="alert" hidden></div><div class="actions"><button type="button" data-save-form>${edit?.key===key?'Save changes':key==='transactions'?'Add transaction':key==='calendar'?'Add calendar event':key==='semesters'?'Add semester':key==='courses'?'Add course':key==='university'?'Add assessment':'Add entry'}</button>${edit?.key===key?'<button type="button" class="secondary" data-cancel>Cancel</button>':''}</div></form>`}function current(key){return edit?.key===key?state[key].find(x=>x.id===edit.id)||{}:{}}function controls(key,id){return `<button class="secondary" data-edit="${key}:${id}">Edit</button><button class="danger" data-delete="${key}:${id}">Delete</button>`}function table(headers,rows){return rows.length?`<div class="tablewrap"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nothing added yet.</div>'}function parseAmount(v){const s=String(v).trim().replace(',','.');if(!/^-?(?:\d+(?:\.\d{0,2})?|\.\d{1,2})$/.test(s))throw Error('Enter a valid number with up to two decimal places.');return Math.round(Number(s)*100)/100}function addMonths(s,n){const d=dateObj(s),day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+n);d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));return localDate(d)}function monthEnd(m){return localDate(new Date(Number(m.slice(0,4)),Number(m.slice(5)),0))}function occurrences(end){const out=[];for(const t of state.transactions){for(let i=0;i<20000;i++){let d=t.date;if(i){if(t.repeat==='Once')break;if(t.repeat==='Monthly'||t.repeat==='Yearly')d=addMonths(t.date,i*(t.repeat==='Yearly'?12:1));else{const a=dateObj(t.date);a.setDate(a.getDate()+i*(t.repeat==='Weekly'?7:14));d=localDate(a)}}if(d>end||(t.end&&d>t.end))break;out.push({...t,date:d,originalDate:t.date});if(t.repeat==='Once')break}}return out}function signed(t){return t.type==='Income'?t.amount:-t.amount}function balance(end){return state.opening+sum(occurrences(end).map(signed))}function totals(m,end=monthEnd(m)){const list=occurrences(end).filter(t=>t.date.startsWith(m));return {list,income:sum(list.filter(t=>t.type==='Income').map(t=>t.amount)),expense:sum(list.filter(t=>t.type==='Expense').map(t=>t.amount))}}function home(){const t=totals(today().slice(0,7),today());const upcoming=[...state.calendar.map(x=>({...x,title:x.title})),...state.university.filter(x=>x.date).map(x=>({...x,title:x.course+' — '+x.title})),...state.work.filter(x=>x.status!=='Done'&&x.date)].filter(x=>x.date>=today()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,6);return `<div class="grid">${metric('Estimated balance',money(balance(today())))}${metric('This month net',money(t.income-t.expense))}${metric('Open work tasks',state.work.filter(x=>x.status!=='Done').length)}${metric('Upcoming items',upcoming.length)}</div>${card('Coming up',table(['Date','Item'],upcoming.map(x=>[esc(x.date),esc(x.title)])))}<div class="grid">${sections.slice(1).map(([n,i,d])=>`<button class="card tile" data-go="${n}"><span>${i}</span><strong>${n}</strong><small>${d}</small></button>`).join('')}</div>`}
-const cats=['Paycheque','Other income','Housing','Groceries','Dining out','Transportation','Car payment','Insurance','Bills','Subscriptions','Shopping','Entertainment','Health','Education','Other'];function transactionRows(){const rows=[...state.transactions].filter(a=>(!txFrom||a.date>=txFrom)&&(!txTo||a.date<=txTo)&&(txCategory==='All'||a.category===txCategory)).sort((a,b)=>b.date.localeCompare(a.date));return `<p class="filter-summary">${rows.length} of ${state.transactions.length} entries · Filters apply to transaction or recurring-series start dates.</p>`+table(['Start date','Description','Category','Amount','Repeat','End date','Actions'],rows.map(a=>[esc(a.date),esc(a.title),esc(a.category),`<span class="${a.type==='Income'?'green':'red'}">${a.type==='Income'?'+':'−'}${money(a.amount)}</span>`,esc(a.repeat),esc(a.end||'—'),controls('transactions',a.id)]))}
-function finance(){const x=current('transactions'), t=totals(month), actual=totals(today().slice(0,7),today()), now=balance(today()), net=t.income-t.expense;const budgetIncome=t.income, target=budgetIncome*state.budget/100, essentials=['Housing','Groceries','Transportation','Car payment','Insurance','Bills','Health','Education'], essential=sum(t.list.filter(a=>a.type==='Expense'&&essentials.includes(a.category)).map(a=>a.amount)), discretionary=t.expense-essential, allowed=Math.max(0,budgetIncome-essential-target);const forecast=[];for(let i=1;i<=state.projection;i++){let m=addMonths(today().slice(0,7)+'-01',i).slice(0,7),z=totals(m);forecast.push({m,...z,b:balance(monthEnd(m))})}return `<div class="grid">${metric('Balance as of today',money(now),now<0?'red':'')}${metric('Income this month to date',money(actual.income),'green')}${metric('Expenses this month to date',money(actual.expense),'red')}${metric('Month-end forecast',money(balance(monthEnd(today().slice(0,7)))))}</div>${card(edit?.key==='transactions'?'Edit transaction / series':'Add income or expense',form('transactions',select('Type','type',['Expense','Income'],x.type||'Expense')+number('Amount (CAD)','amount',x.amount??'')+field('Date','date',x.date||today(),'date','required')+select('Category','category',cats,x.category||'Other')+field('Description (optional)','title',x.title||'')+select('Repeat','repeat',['Once','Weekly','Biweekly','Monthly','Yearly'],x.repeat||'Once')+field('End date (optional)','end',x.end||'','date'))+'<p class="muted">Recurring entries automatically appear in projections. Editing a recurring entry changes its entire series; to change a future payment, end the old series and add a new one.</p>')}${card('Transaction register',`<div class="filterbar">${field('From date','txFrom',txFrom,'date')}${field('To date','txTo',txTo,'date')}${select('Category','txCategory',['All',...new Set([...cats,...state.transactions.map(a=>a.category)])],txCategory)}<button class="secondary" data-clear-tx>Clear filters</button></div>${transactionRows()}`)}${card('Monthly breakdown',`<div class="formgrid">${field('Select month','financeMonth',month,'month')}</div><div class="grid" style="margin-top:12px">${metric('Planned income',money(t.income))}${metric('Planned expenses',money(t.expense))}${metric('Planned surplus',money(net),net<0?'red':'green')}</div>${table(['Date','Description','Amount'],t.list.sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(a.title),money(signed(a))]))}<h3>Spending by category</h3>${cats.map(c=>({c,v:sum(t.list.filter(a=>a.type==='Expense'&&a.category===c).map(a=>a.amount))})).filter(a=>a.v>0).sort((a,b)=>b.v-a.v).map(a=>`<div class="row"><span>${a.c}</span><strong>${money(a.v)}</strong></div><div class="bar"><div style="width:${a.v/(t.expense||1)*100}%"></div></div>`).join('')||'<p class="muted">No expenses this month.</p>'}`)}${card('Budget recommendation',`<p class="muted">Based on the selected month's entered income and expenses. Adjust your savings target in Settings.</p>${table(['Category','Recommended','Planned'],[['Essentials',money(essential),money(essential)],['Discretionary spending',money(allowed),money(discretionary)],['Savings ('+state.budget+'%)',money(target),money(net)]])}<p>${budgetIncome<=0?'Add income to receive a meaningful budget recommendation.':essential+target>budgetIncome?'Your essential expenses and savings target exceed income. Consider reducing obligations or adjusting your savings target.':discretionary>allowed?'Reduce discretionary spending by '+money(discretionary-allowed)+' to reach your savings target.':'Your entered spending fits your savings target. You have '+money(allowed-discretionary)+' of additional discretionary room.'}</p>`)}${card('Financial projections',`<div class="formgrid"><label>Forecast horizon<select id="horizon">${[3,6,12,24,60,120].map(n=>`<option value="${n}" ${n===state.projection?'selected':''}>${n} months</option>`).join('')}</select></label></div><p class="muted">Includes all dated entries and recurring series. No assumed investment returns or inflation.</p><div class="metric ${forecast.at(-1).b<0?'red':'green'}">${money(forecast.at(-1).b)}</div>${forecastChart(now,forecast)}${forecast.some(f=>f.b<0)?'<p class="red">Warning: a projected month-end balance is negative.</p>':''}${table(['Month','Income','Expenses','Ending balance'],forecast.map(f=>[f.m,money(f.income),money(f.expense),`<span class="${f.b<0?'red':'green'}">${money(f.b)}</span>`]))}`)}`}
-function forecastChart(now,forecast){const values=[{m:'Today',b:now}, {m:today().slice(0,7),b:balance(monthEnd(today().slice(0,7)))},...forecast];const W=760,H=290,L=100,R=24,T=24,B=48;let lo=Math.min(...values.map(v=>v.b)),hi=Math.max(...values.map(v=>v.b));const pad=Math.max((hi-lo)*.12,Math.abs(hi)*.02,10);lo-=pad;hi+=pad;const X=i=>L+i*(W-L-R)/(values.length-1),Y=v=>T+(hi-v)*(H-T-B)/(hi-lo),pts=values.map((v,i)=>`${X(i)},${Y(v.b)}`).join(' '),step=Math.max(1,Math.ceil((values.length-1)/5));const axisMoney=v=>new Intl.NumberFormat('en-CA',{style:'currency',currency:'CAD',maximumFractionDigits:0}).format(v);return `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:460px;display:block" role="img" aria-label="Projected balance by month in Canadian dollars"><title>Projected account balance</title>${Array.from({length:5},(_,i)=>{let v=hi-(hi-lo)*i/4,y=Y(v);return `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="var(--line)"/><text x="${L-10}" y="${y+4}" text-anchor="end" fill="var(--muted)" font-size="12">${esc(axisMoney(v))}</text>`}).join('')}${lo<0&&hi>0?`<line x1="${L}" x2="${W-R}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--red)" stroke-dasharray="5 4"/>`:''}<polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${values.map((v,i)=>`<circle cx="${X(i)}" cy="${Y(v.b)}" r="${values.length>30?2:4}" fill="${v.b<0?'var(--red)':'var(--accent)'}"><title>${esc(v.m)}: ${esc(money(v.b))}</title></circle>`).join('')}${values.map((v,i)=>i===0||i===values.length-1||(i%step===0&&i<values.length-1-step/2)?`<text x="${X(i)}" y="${H-20}" text-anchor="${i===0?'start':i===values.length-1?'end':'middle'}" font-size="12" fill="var(--muted)">${i===0?'Today':dateObj(v.m+'-01').toLocaleDateString('en-CA',{month:'short',year:'2-digit'})}</text>`:'').join('')}</svg></div><p class="muted">Projected balance (CAD) · Hover over a point for its exact amount.</p>`}
-function idSelect(label,name,items,value,placeholder='Choose an option'){return `<label>${label}<select name="${name}" required><option value="">${esc(placeholder)}</option>${items.map(c=>`<option value="${esc(c.id)}" ${c.id===value?'selected':''}>${esc(c.title)}</option>`).join('')}</select></label>`}function passModel(c,all){const a=all.filter(x=>x.courseId===c.id),graded=a.filter(x=>x.grade!==null&&x.grade!==undefined),w=sum(graded.map(x=>x.weight)),p=sum(graded.map(x=>x.weight*x.grade/100)),f=Number(c.finalWeight??0),remaining=100-f-w,listed=sum(a.map(x=>x.weight));return {w,p,f,remaining,average:w?p/w*100:null,valid:remaining>=-0.00001&&listed+f<=100.00001}}function requiredExam(m){return (50-m.p-Math.max(0,m.remaining)*m.average/100)*100/m.f}function passingCards(courses,assessments){return card('Final exam passing calculator',`<p class="muted">Required final exam grade to finish with 50% overall. Set the final exam weight in the course settings; do not add it as a regular assessment.</p>`+courses.map(c=>{const m=passModel(c,assessments);let result;if(!m.valid)result='<p class="red">Check assessment weights: the total exceeds 100%.</p>';else if(!m.f)result='<p>No final exam configured.</p>';else if(m.average===null&&m.remaining>0)result='<p>Add a graded assessment to calculate an estimate.</p>';else{const n=requiredExam(m);result=`<small>${m.remaining>0.00001?'Estimated':'Required'} final exam grade to finish with 50%</small><div class="metric ${n>100?'red':''}">${n>100?'Not achievable ('+(Math.ceil(n*100-1e-8)/100).toFixed(2)+'% needed)':(Math.ceil(n*100-1e-8)/100).toFixed(2)+'%'}</div>${n<0?'<p class="muted">Negative theoretical requirement: a 0% exam grade would still leave you above 50% '+(m.remaining>0.00001?'under this estimate.':'overall.')+'</p>':''}<p class="muted">${m.remaining>0.00001?'Assumes your remaining coursework averages '+m.average.toFixed(2)+'%. Updates as grades are entered.':'Based on confirmed coursework grades.'}</p>`}return `<section class="pass-course"><h3>${esc(c.title)}</h3><p>Final exam weight: ${m.f}% · Passing grade: 50%</p>${result}</section>`}).join(''))}function university(){migrateUniversity();const sem=state.semesters.find(s=>s.id===semesterId), courses=state.courses.filter(c=>c.semesterId===semesterId), assessments=state.university.filter(a=>a.semesterId===semesterId),x=current('university'),se=current('semesters'),ce=current('courses');return card('Semesters',`<div class="formgrid">${idSelect('Active semester','activeSemester',state.semesters,semesterId,'Select semester')}</div><p class="muted">Switch semesters at any time. Previous courses and grades are retained.</p>`+form('semesters',field('Semester name','title',se.title||'','text','required placeholder="e.g. Winter 2027"'))+table(['Semester','Actions'],state.semesters.map(a=>[esc(a.title),controls('semesters',a.id)])))+(!sem?'<p class="notice">Add a semester to start tracking courses.</p>':card('Courses — '+esc(sem.title),form('courses',field('Course name or code','title',ce.title||'','text','required placeholder="e.g. BADM 3000 — Finance"')+number('Final exam weight (%) — 0 if none','finalWeight',ce.finalWeight??0))+table(['Course','Graded weight','Current average','Overall points','Actions'],courses.map(c=>{let a=assessments.filter(x=>x.courseId===c.id&&x.grade!==null),w=sum(a.map(x=>x.weight)),p=sum(a.map(x=>x.weight*x.grade/100));if(c.finalGrade!==null&&c.finalGrade!==undefined&&c.finalWeight){w+=c.finalWeight;p+=c.finalWeight*c.finalGrade/100}return [esc(c.title),w+'%',w?(p/w*100).toFixed(2)+'%':'—',p.toFixed(2)+'%',controls('courses',c.id)]})))+(courses.length?passingCards(courses,assessments):'')+(courses.length?card('Add or edit assessment',form('university',idSelect('Course','courseId',courses,x.courseId||courseFilter||'','Select course')+field('Test / assignment name','title',x.title||'','text','required')+field('Due date','date',x.date||'','date')+number('Weight (%)','weight',x.weight??'')+field('Grade (%) — optional','grade',x.grade??'','text','inputmode="decimal"')))+card('Assessments',`<label>Filter by course<select name="courseFilter"><option value="">All courses</option>${courses.map(c=>`<option value="${esc(c.id)}" ${c.id===courseFilter?'selected':''}>${esc(c.title)}</option>`).join('')}</select></label>`+table(['Course','Assessment','Due','Weight','Grade','Actions'],assessments.filter(a=>!courseFilter||a.courseId===courseFilter).map(a=>[esc(a.course),esc(a.title),esc(a.date||'—'),a.weight+'%',a.grade===null?'—':a.grade+'%',controls('university',a.id)]))):'<p class="notice">Add your courses first, then select one when adding an assessment.</p>'))}let workFilter='All', calView='Month', calAnchor=today(), txFrom='',txTo='',txCategory='All',linkCategory='All',linkQuery='';
-function work(){const x=current('work'),n=state.work.length,done=state.work.filter(a=>a.status==='Done').length,progress=n?Math.round(done/n*100):0, statuses=['To do','In progress','Waiting','Done'];const tasks=state.work.filter(a=>workFilter==='All'||a.status===workFilter).sort((a,b)=>(a.status==='Done')-(b.status==='Done')||(a.date||'9999').localeCompare(b.date||'9999'));return card('Work overview',`<div class="row"><strong>${done} of ${n} tasks completed</strong><strong class="green">${progress}%</strong></div><div class="work-progress" role="progressbar" aria-label="Tasks completed" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"><div style="width:${progress}%"></div></div><div class="work-summary">${statuses.map(v=>`<div class="work-stat"><small>${v}</small><strong>${state.work.filter(a=>a.status===v).length}</strong></div>`).join('')}</div>`)+card(edit?.key==='work'?'Edit task':'Add task or follow-up',form('work',field('Task','title',x.title||'','text','required')+field('Due date','date',x.date||'','date')+select('Priority','priority',['Normal','High','Low'],x.priority||'Normal')+select('Status','status',statuses,x.status||'To do')+field('Notes / follow-up','notes',x.notes||'')))+card('Your tasks',`<div class="filterbar">${select('Filter by status','workFilter',['All',...statuses],workFilter)}</div><div class="task-list">${tasks.map(a=>`<article class="task-card ${a.status==='Done'?'done':''}"><div class="row"><span class="pill ${a.priority==='High'?'red':''}">${esc(a.priority)} priority</span><small class="${a.date&&a.date<today()&&a.status!=='Done'?'red':''}">${a.date?'Due '+esc(a.date):'No due date'}</small></div><h3>${esc(a.title)}</h3>${a.notes?`<p class="muted">${esc(a.notes)}</p>`:''}<label>Status<select data-work-status="${esc(a.id)}">${statuses.map(v=>`<option ${v===a.status?'selected':''}>${v}</option>`).join('')}</select></label><div class="actions">${controls('work',a.id)}</div></article>`).join('')||'<p class="muted">No matching tasks.</p>'}</div>`)+ '<p class="notice">Keep confidential employer and client data out of this personal dashboard.</p>'}
-function shiftDay(s,n){const d=dateObj(s);d.setDate(d.getDate()+n);return localDate(d)}function weekStart(s){return shiftDay(s,-dateObj(s).getDay())}function calItems(day){return [...state.calendar.map(a=>({...a,kind:'event'})),...state.university.map(a=>({...a,kind:'school',time:''})),...state.work.filter(a=>a.status!=='Done').map(a=>({...a,kind:'work',time:''}))].filter(a=>a.date===day).sort((a,b)=>(a.time||'').localeCompare(b.time||''))}function timeLabel(t){if(!t)return '';const [h,m]=t.split(':').map(Number);return `${h%12||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`}function calEvent(a,extra=''){return `<div class="cal-event ${a.kind} ${extra}" title="${esc((a.time?timeLabel(a.time)+' ':'')+a.title)}">${a.time?esc(timeLabel(a.time))+' ':''}${esc(a.title)}</div>`}function clockLine(){const d=new Date(),line=document.querySelector('.now-line');if(line)line.style.top=((d.getHours()*60+d.getMinutes())*.8)+'px';if(page==='Calendar'&&document.querySelector('[data-render-day]')?.dataset.renderDay!==today())render()}
-function calendar(){const x=current('calendar'),d=dateObj(calAnchor),first=calAnchor.slice(0,7)+'-01',start=weekStart(calView==='Month'?first:calAnchor),days=calView==='Month'?Array.from({length:Math.ceil((dateObj(first).getDay()+Number(monthEnd(first.slice(0,7)).slice(-2)))/7)*7},(_,i)=>shiftDay(start,i)):Array.from({length:7},(_,i)=>shiftDay(start,i));const title=calView==='Month'?d.toLocaleDateString('en-CA',{month:'long',year:'numeric'}):dateObj(days[0]).toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'})+' – '+dateObj(days[6]).toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'});let grid;if(calView==='Month'){grid=`<div class="month-grid">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(v=>`<div class="weekday">${v}</div>`).join('')}${days.map(day=>`<div class="${day===today()?'is-today':''} ${day.slice(0,7)!==first.slice(0,7)?'outside':''}"><span class="cal-date">${Number(day.slice(-2))}</span>${calItems(day).map(a=>calEvent(a)).join('')}</div>`).join('')}</div>`}else{grid=`<div class="week-grid"><div class="week-head"></div>${days.map(day=>`<div class="week-head ${day===today()?'is-today':''}">${dateObj(day).toLocaleDateString('en-CA',{weekday:'short'})}<br><span class="cal-date">${Number(day.slice(-2))}</span></div>`).join('')}<div class="week-all muted">All day</div>${days.map(day=>`<div class="week-all ${day===today()?'is-today':''}">${calItems(day).filter(a=>!a.time).map(a=>calEvent(a)).join('')}</div>`).join('')}<div class="week-hours">${Array.from({length:24},(_,h)=>`<span class="hour-label" style="top:${h*48}px">${h%12||12} ${h<12?'AM':'PM'}</span>`).join('')}</div>${days.map(day=>`<div class="week-day ${day===today()?'is-today':''}">${calItems(day).filter(a=>a.time).map(a=>{const [h,m]=a.time.split(':').map(Number);return calEvent(a,'week-event').replace(' title=',` style="top:${(h*60+m)*.8}px" title=`)}).join('')}${day===today()?'<div class="now-line"></div>':''}</div>`).join('')}</div>`}return card('Schedule',`<div data-render-day="${today()}" class="cal-toolbar"><div class="row"><button class="secondary" data-cal="-1">←</button><button class="secondary" data-cal="today">Today</button><button class="secondary" data-cal="1">→</button><strong>${title}</strong></div><div class="row"><button class="${calView==='Month'?'':'secondary'}" data-cal-view="Month">Month</button><button class="${calView==='Week'?'':'secondary'}" data-cal-view="Week">Week</button></div></div><div class="cal-scroll">${grid}</div><p class="muted">Blue: calendar · Green: university · Orange: work deadlines. Timed events show their start time.</p>`)+card(edit?.key==='calendar'?'Edit event':'Add event',form('calendar',field('Event','title',x.title||'','text','required')+field('Date','date',x.date||today(),'date','required')+field('Time','time',x.time||'','time')+field('Location / notes','notes',x.notes||'')))+card('Events',table(['Date','Time','Event','Notes','Actions'],[...state.calendar].sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(timeLabel(a.time)||'—'),esc(a.title),esc(a.notes),controls('calendar',a.id)])))}
-function vehicle(){const x=current('vehicle');return card('Maintenance record',form('vehicle',field('Service / repair','title',x.title||'','text','required')+field('Date','date',x.date||today(),'date','required')+number('Odometer (km)','mileage',x.mileage??'',true)+number('Cost (CAD)','amount',x.amount??'')+field('Next service date','next',x.next||'','date')+field('Notes','notes',x.notes||'')))+`<div class="grid">${metric('Latest recorded mileage',state.vehicle.length?Math.max(...state.vehicle.map(a=>a.mileage)).toLocaleString()+' km':'—')}${metric('Total recorded service costs',money(sum(state.vehicle.map(a=>a.amount))))}</div>`+card('Service history',table(['Date','Service','Mileage','Cost','Next service','Notes','Actions'],state.vehicle.map(a=>[esc(a.date),esc(a.title),a.mileage.toLocaleString()+' km',money(a.amount),esc(a.next||'—'),esc(a.notes),controls('vehicle',a.id)])))}function knowledge(){const x=current('knowledge');return card('Add or edit note',form('knowledge',field('Title','title',x.title||'','text','required')+field('Category','category',x.category||'General')+`<label style="grid-column:1/-1">Note<textarea name="notes" required>${esc(x.notes||'')}</textarea></label>`))+card('Notes',`<input id="noteSearch" placeholder="Search notes…"><div id="noteList">${notesHTML('')}</div>`)}function notesHTML(q){return state.knowledge.filter(a=>(a.title+' '+a.category+' '+a.notes).toLowerCase().includes(q.toLowerCase())).map(a=>`<article style="border-bottom:1px solid var(--line);padding:14px 0"><div class="row"><strong>${esc(a.title)}</strong><small>${esc(a.category)}</small></div><p style="white-space:pre-wrap">${esc(a.notes)}</p>${controls('knowledge',a.id)}</article>`).join('')||'<p class="muted">No matching notes.</p>'}function safeURL(s){try{const u=new URL(s);return ['http:','https:'].includes(u.protocol)?u.href:''}catch{return ''}}function linkRows(){const q=linkQuery.toLowerCase(),rows=state.links.filter(a=>(linkCategory==='All'||a.category===linkCategory)&&[a.title,a.url,a.category].some(v=>String(v||'').toLowerCase().includes(q)));return `<p class="filter-summary">${rows.length} of ${state.links.length} links</p>`+table(['Name','Category','Actions'],rows.map(a=>[`<a href="${esc(safeURL(a.url)||'#')}" target="_blank" rel="noopener noreferrer">${esc(a.title)}</a>`,esc(a.category),controls('links',a.id)]))}function links(){const x=current('links');return card('Add bookmark',form('links',field('Name','title',x.title||'','text','required')+field('Website URL','url',x.url||'','url','required')+field('Category','category',x.category||'General')))+card('Your links',`<div class="filterbar">${field('Search links','linkQuery',linkQuery,'search')}${select('Category','linkCategory',['All',...new Set(state.links.map(a=>a.category).filter(Boolean))],linkCategory)}<button class="secondary" data-clear-links>Clear filters</button></div><div id="linkRows">${linkRows()}</div>`)}function settings(){return card('Preferences',`<form id="settingsForm"><div class="formgrid">${number('Opening balance (CAD)','opening',state.opening,false,true)}${number('Savings target (%)','budget',state.budget)}${select('Appearance','theme',['light','dark'],state.theme)}</div><p class="muted">Opening balance means your balance immediately before the earliest transaction you enter. All entered transactions are added to or deducted from this balance.</p><button>Save preferences</button></form>`)+card('Data and backups',`<p>Your data is saved in this browser only. Export backups before moving to a new device or clearing browser data.</p><div class="actions"><button id="export">Export JSON backup</button><button class="secondary" id="csv">Export finance CSV</button><button class="secondary" id="import">Import JSON backup</button><button class="danger" id="reset">Delete all data</button></div><input id="importFile" type="file" accept="application/json,.json" hidden style="display:none">`)+card('About this prototype','<p>Single-file local HTML application. No login, Firebase, external APIs or network requests. Data does not sync between devices. Local file storage behavior varies by browser.</p>')}function download(name,body,type){const u=URL.createObjectURL(new Blob([body],{type})),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}function showDelete(key,id){const item=state[key]?.find(a=>String(a.id)===id);if(!item){notify('Entry not found');return}if(key==='semesters'&&state.courses.some(c=>c.semesterId===id)){notify('Delete courses in this semester before deleting it.');return}if(key==='courses'&&state.university.some(a=>a.courseId===id)){notify('Delete assessments in this course before deleting it.');return}const overlay=document.createElement('div');overlay.className='delete-overlay';overlay.innerHTML=`<section class="card delete-box" role="alertdialog" aria-modal="true" aria-label="Confirm deletion"><h2>Delete entry?</h2><p>${esc(item.title||item.course||'This entry')} will be removed.${item.repeat&&item.repeat!=='Once'?' All occurrences of this recurring transaction will be removed.':''}</p><div class="actions"><button type="button" class="secondary" data-no>Cancel</button><button type="button" class="danger" data-yes>Delete</button></div></section>`;document.body.append(overlay);const close=()=>{overlay.remove();document.removeEventListener('keydown',onKey)};const onKey=e=>{if(e.key==='Escape')close()};document.addEventListener('keydown',onKey);overlay.querySelector('[data-no]').onclick=close;overlay.querySelector('[data-yes]').onclick=()=>{state[key]=state[key].filter(a=>String(a.id)!==id);edit=null;close();save();render();notify(storageOK?'Entry deleted':'Deleted for this session only — export a backup.')};overlay.querySelector('[data-no]').focus()}
-function bind(){const root=$('content');root.oninput=e=>{if(e.target.name==='linkQuery'){linkQuery=e.target.value;$('linkRows').innerHTML=linkRows()}};if(page==='Calendar'){clockLine();}root.onchange=e=>{const el=e.target;if(['workFilter','txFrom','txTo','txCategory','linkCategory'].includes(el.name)){if(el.name==='workFilter')workFilter=el.value;if(el.name==='txFrom')txFrom=el.value;if(el.name==='txTo')txTo=el.value;if(el.name==='txCategory')txCategory=el.value;if(el.name==='linkCategory')linkCategory=el.value;render();return}if(el.name==='activeSemester'){semesterId=el.value;courseFilter='';edit=null;render();return}if(el.name==='courseFilter'){courseFilter=el.value;render();return}if(!el.matches('[data-work-status]'))return;const task=state.work.find(a=>String(a.id)===el.dataset.workStatus);if(task){task.status=el.value;save();render();notify(storageOK?'Status updated':'Status updated for this session only')}};root.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.go)go(b.dataset.go);if(b.dataset.edit){const [key,id]=b.dataset.edit.split(':');edit={key,id};render();window.scrollTo(0,0)}if(b.dataset.delete){const [key,id]=b.dataset.delete.split(':');showDelete(key,id)}if(b.hasAttribute('data-cancel')){edit=null;render()}if(b.dataset.cal){calAnchor=b.dataset.cal==='today'?today():calView==='Week'?shiftDay(calAnchor,7*Number(b.dataset.cal)):addMonths(calAnchor,Number(b.dataset.cal));calMonth=calAnchor.slice(0,7);render()}if(b.dataset.calView){calView=b.dataset.calView;render()}if(b.hasAttribute('data-clear-tx')){txFrom='';txTo='';txCategory='All';render()}if(b.hasAttribute('data-clear-links')){linkCategory='All';linkQuery='';render()}};root.querySelectorAll('form[data-form]').forEach(f=>{const submit=e=>{e.preventDefault();const error=f.querySelector(".form-error");error.hidden=true;try{for(const input of f.elements){if(!input.name)continue;if(input.required&&!String(input.value).trim()){input.focus();throw Error("Please enter "+input.closest("label").firstChild.textContent.trim()+".")}if(!input.checkValidity()&&input.validity.typeMismatch){input.focus();throw Error("Please enter a valid "+input.closest("label").firstChild.textContent.trim()+".")}}let key=f.dataset.form,a=Object.fromEntries(new FormData(f));if(key==='semesters'&&state.semesters.some(s=>s.title.toLowerCase()===a.title.trim().toLowerCase()&&s.id!==edit?.id))throw Error('This semester already exists.');if(key==='courses'){a.finalWeight=parseAmount(a.finalWeight);if(a.finalWeight<0||a.finalWeight>100)throw Error('Final exam weight must be between 0 and 100.');const previous=state.courses.find(c=>c.id===edit?.id);a.finalGrade=previous?.finalGrade??null;if(sum(state.university.filter(x=>x.courseId===edit?.id).map(x=>x.weight))+a.finalWeight>100.00001)throw Error('Assessment weights plus final exam weight cannot exceed 100%.');a.semesterId=semesterId;if(state.courses.some(c=>c.semesterId===semesterId&&c.title.toLowerCase()===a.title.trim().toLowerCase()&&c.id!==edit?.id))throw Error('This course already exists in this semester.')}if(key==='university'){const c=state.courses.find(c=>c.id===a.courseId&&c.semesterId===semesterId);if(!c)throw Error('Select a course.');a.course=c.title;a.semesterId=semesterId;}if(key==='transactions'&&!a.title.trim())a.title=a.category==='Other'?a.type:a.category;for(const k of ['amount','mileage','weight','grade'])if(k in a)a[k]=k==='grade'&&a[k].trim()===''?null:parseAmount(a[k]);if(key==='transactions'&&(a.amount<=0||a.end&&a.end<a.date))throw Error('Enter a positive amount and an end date on or after the start date.');if(key==='university'&&(a.weight<0||a.weight>100||a.grade!==null&&(a.grade<0||a.grade>100)))throw Error('Grades and weights must be between 0 and 100.');if(key==='university'&&sum(state.university.filter(x=>x.courseId===a.courseId&&x.id!==edit?.id).map(x=>x.weight))+a.weight+Number(state.courses.find(c=>c.id===a.courseId)?.finalWeight??0)>100.00001)throw Error('Assessment weights plus final exam weight cannot exceed 100%. Enter the final exam separately in course settings.');if(key==='vehicle'&&(!Number.isInteger(a.mileage)||a.mileage<0||a.amount<0))throw Error('Enter a whole nonnegative mileage and valid cost.');if(key==='links'&&!safeURL(a.url))throw Error('Enter an HTTP or HTTPS website URL.');if(edit?.key===key){a.id=edit.id;state[key]=state[key].map(x=>x.id===a.id?a:x)}else{a.id=uid();state[key].push(a)}if(key==='semesters'){semesterId=a.id;courseFilter=''}if(key==='courses'){state.university.filter(x=>x.courseId===a.id).forEach(x=>x.course=a.title)}edit=null;if(key==='calendar'){calMonth=a.date.slice(0,7);calAnchor=a.date;}if(key==='transactions')month=a.date.slice(0,7);save();render();notify(storageOK?'Saved successfully':'Added for this session only — export a backup.')}catch(err){error.textContent=err.message;error.hidden=false;notify(err.message)}};f.onsubmit=submit;f.querySelector('[data-save-form]').onclick=submit;});const fm=root.querySelector('[name=financeMonth]');if(fm)fm.onchange=()=>{if(fm.value){month=fm.value;render()}};if($('horizon'))$('horizon').onchange=e=>{state.projection=Number(e.target.value);save();render()};if($('noteSearch'))$('noteSearch').oninput=e=>$('noteList').innerHTML=notesHTML(e.target.value);if($('settingsForm'))$('settingsForm').onsubmit=e=>{e.preventDefault();try{const f=new FormData(e.target),o=parseAmount(f.get('opening')),b=parseAmount(f.get('budget'));if(b<0||b>100)throw Error('Savings target must be 0–100%.');state.opening=o;state.budget=b;state.theme=f.get('theme');save();render();notify('Preferences saved')}catch(err){notify(err.message)}};if($('export'))$('export').onclick=()=>download('my-life-backup.json',JSON.stringify(state,null,2),'application/json');if($('csv'))$('csv').onclick=()=>{const keys=['date','type','title','category','amount','repeat','end'],quote=v=>'"'+String(v??'').replace(/^[=+@-]/,"'$&").replace(/"/g,'""')+'"';download('finance.csv',[keys.join(','),...state.transactions.map(a=>keys.map(k=>quote(a[k])).join(','))].join('\r\n'),'text/csv')};if($('reset'))$('reset').onclick=()=>{if(confirm('Permanently delete all dashboard data from this browser?')){state=defaults();save();go('Home')}};if($('import')){$('import').onclick=()=>$('importFile').click();$('importFile').onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text()),base=defaults();for(const k of Object.keys(base).filter(k=>Array.isArray(base[k])))if((['semesters','courses'].includes(k)&&data[k]===undefined)?false:!Array.isArray(data[k])||data[k].some(a=>!a||typeof a.id!=='string'||!/^[a-zA-Z0-9-]+$/.test(a.id)))throw Error('Invalid backup file.');if(!Number.isFinite(data.opening)||!Number.isFinite(data.budget)||data.budget<0||data.budget>100||![3,6,12,24,60,120].includes(data.projection)||!['light','dark'].includes(data.theme))throw Error('Invalid backup preferences.');if(data.transactions.some(a=>!/^\d{4}-\d{2}-\d{2}$/.test(a.date)||!Number.isFinite(a.amount)||a.amount<=0||!['Once','Weekly','Biweekly','Monthly','Yearly'].includes(a.repeat)||!['Income','Expense'].includes(a.type)))throw Error('Invalid transaction records.');if(confirm('Replace all current dashboard data with this backup?')){state={...base,...data};semesterId='';courseFilter='';migrateUniversity();save();go('Home')}}catch(err){notify(err.message)}}}}render();setInterval(()=>{if(page==='Calendar')clockLine()},15000);
-</script></body></html>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827">
+<title>My Life Dashboard</title>
+<style>
+* {
+  box-sizing:border-box
+}
+
+:root {
+  --bg:#f4f6fa;
+  --panel:#fff;
+  --text:#182238;
+  --muted:#66758b;
+  --line:#e0e5ed;
+  --accent:#4263eb;
+  --green:#15805d;
+  --red:#c53945
+}
+
+body.dark {
+  --bg:#101624;
+  --panel:#1b2537;
+  --text:#eff4ff;
+  --muted:#a6b4c9;
+  --line:#354157;
+  --accent:#8398ff;
+  --green:#52d3a2;
+  --red:#ff8993
+}
+
+body {
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font:15px system-ui,sans-serif
+}
+
+aside {
+  position:fixed;
+  inset:0 auto 0 0;
+  width:230px;
+  background:#142037;
+  color:#fff;
+  padding:24px 16px;
+  overflow:auto
+}
+
+aside h2 {
+  font-size:19px;
+  margin:0 0 8px
+}
+
+aside small {
+  color:#a6b4c9
+}
+
+nav {
+  margin-top:28px;
+  display:grid;
+  gap:5px
+}
+
+nav button {
+  background:none;
+  text-align:left;
+  color:#c8d3e6;
+  border:0;
+  padding:12px;
+  border-radius:9px;
+  font-size:15px
+}
+
+nav button.active,nav button:hover {
+  background:#2c4164;
+  color:white
+}
+
+main {
+  margin-left:230px;
+  padding:32px;
+  max-width:1500px
+}
+
+h1 {
+  margin:0;
+  font-size:30px
+}
+
+h2 {
+  font-size:19px;
+  margin:0 0 14px
+}
+
+h3 {
+  font-size:16px
+}
+
+p {
+  line-height:1.5
+}
+
+.muted,small {
+  color:var(--muted)
+}
+
+.top {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:24px;
+  gap:12px
+}
+
+.grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:16px
+}
+
+.card {
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:20px;
+  margin-bottom:16px;
+  min-width:0
+}
+
+.metric {
+  font-size:28px;
+  font-weight:750;
+  margin-top:8px;
+  overflow-wrap:anywhere
+}
+
+.green {
+  color:var(--green)
+}
+
+.red {
+  color:var(--red)
+}
+
+button,input,select,textarea {
+  font:inherit
+}
+
+button {
+  cursor:pointer;
+  border:0;
+  border-radius:8px;
+  padding:10px 14px;
+  background:var(--accent);
+  color:white;
+  font-weight:600
+}
+
+button.secondary {
+  background:var(--bg);
+  color:var(--text);
+  border:1px solid var(--line)
+}
+
+button.danger {
+  color:var(--red);
+  background:transparent;
+  border:1px solid var(--line)
+}
+
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible {
+  outline:2px solid var(--accent);
+  outline-offset:2px
+}
+
+label {
+  display:grid;
+  gap:6px;
+  font-size:13px;
+  color:var(--muted);
+  font-weight:600
+}
+
+input,select,textarea {
+  width:100%;
+  min-width:0;
+  background:var(--panel);
+  color:var(--text);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:11px;
+  font-size:16px
+}
+
+textarea {
+  min-height:100px;
+  resize:vertical
+}
+
+.formgrid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:12px;
+  align-items:end
+}
+
+.actions {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:14px
+}
+
+.tablewrap {
+  overflow-x:auto
+}
+
+table {
+  border-collapse:collapse;
+  width:100%;
+  white-space:nowrap
+}
+
+th,td {
+  padding:12px 9px;
+  text-align:left;
+  border-bottom:1px solid var(--line)
+}
+
+th {
+  color:var(--muted);
+  font-size:12px;
+  text-transform:uppercase
+}
+
+td button {
+  padding:6px 9px;
+  margin-right:4px;
+  font-size:12px
+}
+
+.bar {
+  height:9px;
+  background:var(--line);
+  border-radius:8px;
+  overflow:hidden;
+  margin:7px 0 15px
+}
+
+.bar div {
+  height:100%;
+  background:var(--accent)
+}
+
+.tile {
+  cursor:pointer;
+  text-align:left;
+  color:var(--text);
+  width:100%;
+  font-weight:400
+}
+
+.tile:hover {
+  border-color:var(--accent)
+}
+
+.tile strong {
+  display:block;
+  font-size:17px;
+  margin:10px 0 5px
+}
+
+.tile span {
+  font-size:24px
+}
+
+.empty {
+  padding:18px 0;
+  color:var(--muted)
+}
+
+.notice {
+  padding:12px;
+  background:var(--bg);
+  border-radius:8px;
+  font-size:13px;
+  color:var(--muted)
+}
+
+a {
+  color:var(--accent)
+}
+
+.calendar {
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:5px
+}
+
+.day {
+  min-height:80px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:6px;
+  font-size:12px;
+  overflow-wrap:anywhere
+}
+
+.day.today {
+  border:2px solid var(--accent)
+}
+
+.day span {
+  display:block;
+  background:var(--bg);
+  margin-top:4px;
+  padding:3px;
+  border-radius:4px
+}
+
+.row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap
+}
+
+#toast {
+  position:fixed;
+  bottom:18px;
+  right:18px;
+  background:#182238;
+  color:white;
+  padding:12px 18px;
+  border-radius:8px;
+  display:none;
+  z-index:20
+}
+
+@media(max-width:760px) {
+  aside {
+  position:static;
+  width:auto;
+  padding:14px
+}
+
+aside small {
+  display:none
+}
+
+nav {
+  display:flex;
+  overflow:auto;
+  margin-top:12px
+}
+
+nav button {
+  white-space:nowrap;
+  padding:9px
+}
+
+main {
+  margin:0;
+  padding:16px
+}
+
+h1 {
+  font-size:24px
+}
+
+.card {
+  padding:15px
+}
+
+.grid {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px
+}
+
+.metric {
+  font-size:21px
+}
+
+.day {
+  min-height:60px;
+  padding:3px
+}
+
+.top {
+  margin-bottom:15px
+}
+
+
+}
+
+@media(max-width:370px) {
+  .grid {
+  grid-template-columns:1fr
+}
+
+
+}
+
+.form-error {
+  margin-top:12px;
+  font-weight:600
+}
+
+.form-error[hidden] {
+  display:none
+}
+
+.delete-overlay {
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  background:#0008;
+  display:grid;
+  place-items:center;
+  padding:20px
+}
+
+.delete-box {
+  width:min(420px,100%);
+  background:var(--card,#fff);
+  margin:0;
+  box-sizing:border-box
+}
+
+.dark .delete-box {
+  background:#172033;
+  color:#fff
+}
+
+[data-work-status] {
+  min-width:125px;
+  width:auto
+}
+
+.pass-course {
+  border-top:1px solid var(--line);
+  padding:16px 0
+}
+
+.pass-course .metric {
+  font-size:22px
+}
+
+.pass-course label {
+  max-width:420px;
+  margin:12px 0
+}
+
+.pass-course .grid {
+  margin-top:12px
+}
+
+.work-summary {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin:16px 0
+}
+
+.work-stat {
+  padding:14px;
+  border:1px solid var(--line);
+  border-radius:12px
+}
+
+.work-stat strong {
+  display:block;
+  font-size:24px;
+  margin-top:4px
+}
+
+.work-progress {
+  height:12px;
+  background:var(--line);
+  border-radius:20px;
+  overflow:hidden;
+  margin-top:10px
+}
+
+.work-progress div {
+  height:100%;
+  background:var(--green);
+  transition:width .2s
+}
+
+.task-list {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:12px
+}
+
+.task-card {
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:15px;
+  display:grid;
+  gap:10px;
+  align-content:start
+}
+
+.task-card.done {
+  opacity:.72
+}
+
+.task-card.done h3 {
+  text-decoration:line-through
+}
+
+.task-card h3 {
+  margin:0;
+  overflow-wrap:anywhere
+}
+
+.task-card p {
+  margin:0;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere
+}
+
+.pill {
+  font-size:12px;
+  padding:4px 8px;
+  border-radius:20px;
+  background:var(--bg);
+  font-weight:600
+}
+
+.task-card .actions {
+  margin-top:0
+}
+
+.task-card select {
+  width:100%
+}
+
+.cal-toolbar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:14px
+}
+
+.cal-toolbar .row {
+  justify-content:start
+}
+
+.cal-scroll {
+  overflow:auto
+}
+
+.month-grid {
+  min-width:620px;
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  border-left:1px solid var(--line);
+  border-top:1px solid var(--line)
+}
+
+.month-grid>div {
+  border-right:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding:8px;
+  min-height:105px;
+  overflow-wrap:anywhere
+}
+
+.month-grid>.weekday {
+  min-height:0;
+  text-align:center;
+  color:var(--muted);
+  font-size:12px
+}
+
+.cal-date {
+  display:inline-grid;
+  place-items:center;
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  font-weight:650
+}
+
+.is-today {
+  background:color-mix(in srgb,var(--accent) 8%,var(--panel))
+}
+
+.is-today .cal-date {
+  background:var(--accent);
+  color:white
+}
+
+.outside {
+  opacity:.5
+}
+
+.cal-event {
+  display:block;
+  border-left:3px solid var(--accent);
+  background:color-mix(in srgb,var(--accent) 12%,var(--panel));
+  border-radius:4px;
+  padding:4px 6px;
+  margin-top:4px;
+  font-size:12px;
+  overflow-wrap:anywhere
+}
+
+.cal-event.school {
+  border-color:#16a34a
+}
+
+.cal-event.work {
+  border-color:#e59a29
+}
+
+.week-grid {
+  display:grid;
+  grid-template-columns:58px repeat(7,minmax(94px,1fr));
+  min-width:735px
+}
+
+.week-head {
+  padding:8px;
+  text-align:center;
+  border:1px solid var(--line);
+  font-size:12px
+}
+
+.week-all {
+  min-height:42px;
+  padding:4px;
+  border:1px solid var(--line);
+  font-size:12px
+}
+
+.week-hours,.week-day {
+  position:relative;
+  height:1152px;
+  border-right:1px solid var(--line)
+}
+
+.week-day {
+  background-image:repeating-linear-gradient(to bottom, var(--line) 0px,var(--line) 1px,transparent 1px,transparent 48px)
+}
+
+.hour-label {
+  position:absolute;
+  right:7px;
+  font-size:11px;
+  color:var(--muted)
+}
+
+.week-event {
+  position:absolute;
+  left:3px;
+  right:3px;
+  margin:0;
+  min-height:28px;
+  z-index:1;
+  overflow:hidden
+}
+
+.now-line {
+  position:absolute;
+  left:0;
+  right:0;
+  height:2px;
+  background:#ef4444;
+  z-index:4;
+  pointer-events:none
+}
+
+.now-line:before {
+  content:'';
+  position:absolute;
+  left:-4px;
+  top:-3px;
+  width:8px;
+  height:8px;
+  background:#ef4444;
+  border-radius:50%
+}
+
+.filterbar {
+  display:flex;
+  gap:10px;
+  align-items:end;
+  flex-wrap:wrap;
+  margin-bottom:12px
+}
+
+.filterbar label {
+  flex:1;
+  min-width:130px
+}
+
+.filterbar button {
+  flex:none
+}
+
+.filter-summary {
+  margin:10px 0;
+  color:var(--muted);
+  font-size:13px
+}
+
+@media(max-width:760px) {
+  .work-summary {
+  grid-template-columns:repeat(2,minmax(0,1fr))
+}
+
+.task-list {
+  grid-template-columns:1fr
+}
+
+
+}
+</style>
+</head>
+<body>
+<aside><h2>◈ My Life Dashboard</h2>
+<small>Your personal workspace</small>
+<nav id="nav"></nav>
+</aside>
+<main><div class="top"><div><h1 id="heading"></h1>
+<div class="muted" id="today"></div>
+</div>
+<button class="secondary" id="theme">◐ Theme</button>
+</div>
+<div id="content"></div>
+</main>
+<div id="toast" role="status"></div>
+<script>
+'use strict';
+const $=id=>document.getElementById(id), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({
+  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+}[c])), money=n=>new Intl.NumberFormat('en-CA',{
+  style:'currency',currency:'CAD'
+}).format(n), localDate=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`, today=()=>localDate(new Date()), dateObj=s=>new Date(s+'T12:00:00'), uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2), num=v=>Number(v), sum=a=>a.reduce((s,x)=>s+x,0);
+const defaults=()=>({
+  transactions:[],university:[],semesters:[],courses:[],work:[],calendar:[],vehicle:[],knowledge:[],links:[],opening:0,theme:'light',budget:20,projection:12
+});
+let state=defaults(),storageOK=true;
+try{
+  const saved=localStorage.getItem('myLifeDashboard.v1');
+  if(saved)state={
+    ...state,...JSON.parse(saved)
+  }
+} catch(e){
+  storageOK=false
+}
+let page='Home',edit=null,month=today().slice(0,7),calMonth=today().slice(0,7);
+let semesterId='',courseFilter='';
+function migrateUniversity(){
+  if(!state.semesters.length&&state.university.length){
+    const sem={
+      id:uid(),title:'Previous assessments'
+    };
+    state.semesters.push(sem);
+    for(const a of state.university){
+      let c=state.courses.find(c=>c.semesterId===sem.id&&c.title===a.course);
+      if(!c){
+        c={
+          id:uid(),semesterId:sem.id,title:a.course||'Unnamed course'
+        };
+        state.courses.push(c)
+      }
+      a.courseId=c.id;
+      a.semesterId=sem.id
+    }
+  }
+  if(!state.semesters.some(s=>s.id===semesterId))semesterId=state.semesters.at(-1)?.id||'';
+  if(!state.courses.some(c=>c.id===courseFilter&&c.semesterId===semesterId))courseFilter=''
+}
+migrateUniversity();
+const sections=[['Home','⌂','Your daily overview'],['University','🎓','Grades, exams & assignments'],['Work','▤','Tasks & follow-ups'],['Calendar','▦','Schedule & deadlines'],['Finances','$','Income, expenses & projections'],['Vehicle','🚘','Maintenance & mileage'],['Knowledge Base','▧','Notes & procedures'],['Quick Links','↗','Frequently visited websites'],['Settings','⚙','Preferences & appearance']];
+function save(){
+  try{
+    localStorage.setItem('myLifeDashboard.v1',JSON.stringify(state));
+    storageOK=true
+  } catch(e){
+    storageOK=false;
+    notify('Local saving failed. Export a backup in Settings.')
+  }
+}
+function notify(s){
+  $('toast').textContent=s;
+  $('toast').style.display='block';
+  clearTimeout(notify.timer);
+  notify.timer=setTimeout(()=>$('toast').style.display='none',3500)
+}
+function go(p){
+  page=p;
+  edit=null;
+  render()
+}
+function render(){
+  document.body.classList.toggle('dark',state.theme==='dark');
+  $('heading').textContent=page==='Home'?'Overview':page;
+  $('today').textContent=new Date().toLocaleDateString('en-CA',{
+    weekday:'long',month:'long',day:'numeric',year:'numeric'
+  });
+  $('nav').innerHTML=sections.map(([n,i])=>`<button data-page="${esc(n)}" class="${page===n?'active':''}">${i} &nbsp;${n}</button>`).join('');
+  $('nav').querySelectorAll('button').forEach(b=>b.onclick=()=>go(b.dataset.page));
+  $('content').innerHTML=(!storageOK?'<p class="notice">Browser storage is unavailable. Export a backup before closing.</p>':'')+({
+    Home:home,Finances:finance,University:university,Work:work,Calendar:calendar,Vehicle:vehicle,'Knowledge Base':knowledge,'Quick Links':links,Settings:settings
+  }[page])();
+  bind()
+}
+$('theme').onclick=()=>{
+  state.theme=state.theme==='dark'?'light':'dark';
+  save();
+  render()
+};
+function card(title,body){
+  return `<section class="card"><h2>${title}</h2>${body}</section>`
+}
+function metric(label,value,cls=''){
+  return `<div class="card"><div class="muted">${label}</div><div class="metric ${cls}">${value}</div></div>`
+}
+function field(label,name,value='',type='text',extra=''){
+  return `<label>${label}<input name="${name}" type="${type}" value="${esc(value)}" ${extra}></label>`
+}
+function number(label,name,value='',integer=false,negative=false){
+  return field(label,name,value,'text',`inputmode="${integer?'numeric':'decimal'}" autocomplete="off" required`)
+}
+function select(label,name,opts,value){
+  return `<label>${label}<select name="${name}">${opts.map(x=>`<option ${x===value?'selected':''}>${esc(x)}</option>`).join('')}</select></label>`
+}
+function form(key,fields){
+  return `<form data-form="${key}" novalidate><div class="formgrid">${fields}</div><div class="form-error red" role="alert" hidden></div><div class="actions"><button type="button" data-save-form>${edit?.key===key?'Save changes':key==='transactions'?'Add transaction':key==='calendar'?'Add calendar event':key==='semesters'?'Add semester':key==='courses'?'Add course':key==='university'?'Add assessment':'Add entry'}</button>${edit?.key===key?'<button type="button" class="secondary" data-cancel>Cancel</button>':''}</div></form>`
+}
+function current(key){
+  return edit?.key===key?state[key].find(x=>x.id===edit.id)||{
+  }:{
+  }
+}
+function controls(key,id){
+  return `<button class="secondary" data-edit="${key}:${id}">Edit</button><button class="danger" data-delete="${key}:${id}">Delete</button>`
+}
+function table(headers,rows){
+  return rows.length?`<div class="tablewrap"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nothing added yet.</div>'
+}
+function parseAmount(v){
+  const s=String(v).trim().replace(',','.');
+  if(!/^-?(?:\d+(?:\.\d{0,2})?|\.\d{1,2})$/.test(s))throw Error('Enter a valid number with up to two decimal places.');
+  return Math.round(Number(s)*100)/100
+}
+function addMonths(s,n){
+  const d=dateObj(s),day=d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth()+n);
+  d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));
+  return localDate(d)
+}
+function monthEnd(m){
+  return localDate(new Date(Number(m.slice(0,4)),Number(m.slice(5)),0))
+}
+function occurrences(end){
+  const out=[];
+  for(const t of state.transactions){
+    for(let i=0;
+    i<20000;
+    i++){
+      let d=t.date;
+      if(i){
+        if(t.repeat==='Once')break;
+        if(t.repeat==='Monthly'||t.repeat==='Yearly')d=addMonths(t.date,i*(t.repeat==='Yearly'?12:1));
+        else{
+          const a=dateObj(t.date);
+          a.setDate(a.getDate()+i*(t.repeat==='Weekly'?7:14));
+          d=localDate(a)
+        }
+      }
+      if(d>end||(t.end&&d>t.end))break;
+      out.push({
+        ...t,date:d,originalDate:t.date
+      });
+      if(t.repeat==='Once')break
+    }
+  }
+  return out
+}
+function signed(t){
+  return t.type==='Income'?t.amount:-t.amount
+}
+function balance(end){
+  return state.opening+sum(occurrences(end).map(signed))
+}
+function totals(m,end=monthEnd(m)){
+  const list=occurrences(end).filter(t=>t.date.startsWith(m));
+  return {
+    list,income:sum(list.filter(t=>t.type==='Income').map(t=>t.amount)),expense:sum(list.filter(t=>t.type==='Expense').map(t=>t.amount))
+  }
+}
+function home(){
+  const t=totals(today().slice(0,7),today());
+  const upcoming=[...state.calendar.map(x=>({
+    ...x,title:x.title
+  })),...state.university.filter(x=>x.date).map(x=>({
+    ...x,title:x.course+' — '+x.title
+  })),...state.work.filter(x=>x.status!=='Done'&&x.date)].filter(x=>x.date>=today()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,6);
+  return `<div class="grid">${metric('Estimated balance',money(balance(today())))}${metric('This month net',money(t.income-t.expense))}${metric('Open work tasks',state.work.filter(x=>x.status!=='Done').length)}${metric('Upcoming items',upcoming.length)}</div>${card('Coming up',table(['Date','Item'],upcoming.map(x=>[esc(x.date),esc(x.title)])))}<div class="grid">${sections.slice(1).map(([n,i,d])=>`<button class="card tile" data-go="${n}"><span>${i}</span><strong>${n}</strong><small>${d}</small></button>`).join('')}</div>`
+}
+const cats=['Paycheque','Other income','Housing','Groceries','Dining out','Transportation','Car payment','Insurance','Bills','Subscriptions','Shopping','Entertainment','Health','Education','Other'];
+function transactionRows(){
+  const rows=[...state.transactions].filter(a=>(!txFrom||a.date>=txFrom)&&(!txTo||a.date<=txTo)&&(txCategory==='All'||a.category===txCategory)).sort((a,b)=>b.date.localeCompare(a.date));
+  return `<p class="filter-summary">${rows.length} of ${state.transactions.length} entries · Filters apply to transaction or recurring-series start dates.</p>`+table(['Start date','Description','Category','Amount','Repeat','End date','Actions'],rows.map(a=>[esc(a.date),esc(a.title),esc(a.category),`<span class="${a.type==='Income'?'green':'red'}">${a.type==='Income'?'+':'−'}${money(a.amount)}</span>`,esc(a.repeat),esc(a.end||'—'),controls('transactions',a.id)]))
+}
+function finance(){
+  const x=current('transactions'), t=totals(month), actual=totals(today().slice(0,7),today()), now=balance(today()), net=t.income-t.expense;
+  const budgetIncome=t.income, target=budgetIncome*state.budget/100, essentials=['Housing','Groceries','Transportation','Car payment','Insurance','Bills','Health','Education'], essential=sum(t.list.filter(a=>a.type==='Expense'&&essentials.includes(a.category)).map(a=>a.amount)), discretionary=t.expense-essential, allowed=Math.max(0,budgetIncome-essential-target);
+  const forecast=[];
+  for(let i=1;
+  i<=state.projection;
+  i++){
+    let m=addMonths(today().slice(0,7)+'-01',i).slice(0,7),z=totals(m);
+    forecast.push({
+      m,...z,b:balance(monthEnd(m))
+    })
+  }
+  return `<div class="grid">${metric('Balance as of today',money(now),now<0?'red':'')}${metric('Income this month to date',money(actual.income),'green')}${metric('Expenses this month to date',money(actual.expense),'red')}${metric('Month-end forecast',money(balance(monthEnd(today().slice(0,7)))))}</div>${card(edit?.key==='transactions'?'Edit transaction / series':'Add income or expense',form('transactions',select('Type','type',['Expense','Income'],x.type||'Expense')+number('Amount (CAD)','amount',x.amount??'')+field('Date','date',x.date||today(),'date','required')+select('Category','category',cats,x.category||'Other')+field('Description (optional)','title',x.title||'')+select('Repeat','repeat',['Once','Weekly','Biweekly','Monthly','Yearly'],x.repeat||'Once')+field('End date (optional)','end',x.end||'','date'))+'<p class="muted">Recurring entries automatically appear in projections. Editing a recurring entry changes its entire series; to change a future payment, end the old series and add a new one.</p>')}${card('Transaction register',`<div class="filterbar">${field('From date','txFrom',txFrom,'date')}${field('To date','txTo',txTo,'date')}${select('Category','txCategory',['All',...new Set([...cats,...state.transactions.map(a=>a.category)])],txCategory)}<button class="secondary" data-clear-tx>Clear filters</button></div>${transactionRows()}`)}${card('Monthly breakdown',`<div class="formgrid">${field('Select month','financeMonth',month,'month')}</div><div class="grid" style="margin-top:12px">${metric('Planned income',money(t.income))}${metric('Planned expenses',money(t.expense))}${metric('Planned surplus',money(net),net<0?'red':'green')}</div>${table(['Date','Description','Amount'],t.list.sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(a.title),money(signed(a))]))}<h3>Spending by category</h3>${cats.map(c=>({c,v:sum(t.list.filter(a=>a.type==='Expense'&&a.category===c).map(a=>a.amount))})).filter(a=>a.v>0).sort((a,b)=>b.v-a.v).map(a=>`<div class="row"><span>${a.c}</span><strong>${money(a.v)}</strong></div><div class="bar"><div style="width:${a.v/(t.expense||1)*100}%"></div></div>`).join('')||'<p class="muted">No expenses this month.</p>'}`)}${card('Budget recommendation',`<p class="muted">Based on the selected month's entered income and expenses. Adjust your savings target in Settings.</p>${table(['Category','Recommended','Planned'],[['Essentials',money(essential),money(essential)],['Discretionary spending',money(allowed),money(discretionary)],['Savings ('+state.budget+'%)',money(target),money(net)]])}<p>${budgetIncome<=0?'Add income to receive a meaningful budget recommendation.':essential+target>budgetIncome?'Your essential expenses and savings target exceed income. Consider reducing obligations or adjusting your savings target.':discretionary>allowed?'Reduce discretionary spending by '+money(discretionary-allowed)+' to reach your savings target.':'Your entered spending fits your savings target. You have '+money(allowed-discretionary)+' of additional discretionary room.'}</p>`)}${card('Financial projections',`<div class="formgrid"><label>Forecast horizon<select id="horizon">${[3,6,12,24,60,120].map(n=>`<option value="${n}" ${n===state.projection?'selected':''}>${n} months</option>`).join('')}</select></label></div><p class="muted">Includes all dated entries and recurring series. No assumed investment returns or inflation.</p><div class="metric ${forecast.at(-1).b<0?'red':'green'}">${money(forecast.at(-1).b)}</div>${forecastChart(now,forecast)}${forecast.some(f=>f.b<0)?'<p class="red">Warning: a projected month-end balance is negative.</p>':''}${table(['Month','Income','Expenses','Ending balance'],forecast.map(f=>[f.m,money(f.income),money(f.expense),`<span class="${f.b<0?'red':'green'}">${money(f.b)}</span>`]))}`)}`
+}
+function forecastChart(now,forecast){
+  const values=[{
+    m:'Today',b:now
+  }, {
+    m:today().slice(0,7),b:balance(monthEnd(today().slice(0,7)))
+  },...forecast];
+  const W=760,H=290,L=100,R=24,T=24,B=48;
+  let lo=Math.min(...values.map(v=>v.b)),hi=Math.max(...values.map(v=>v.b));
+  const pad=Math.max((hi-lo)*.12,Math.abs(hi)*.02,10);
+  lo-=pad;
+  hi+=pad;
+  const X=i=>L+i*(W-L-R)/(values.length-1),Y=v=>T+(hi-v)*(H-T-B)/(hi-lo),pts=values.map((v,i)=>`${X(i)},${Y(v.b)}`).join(' '),step=Math.max(1,Math.ceil((values.length-1)/5));
+  const axisMoney=v=>new Intl.NumberFormat('en-CA',{
+    style:'currency',currency:'CAD',maximumFractionDigits:0
+  }).format(v);
+  return `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:460px;display:block" role="img" aria-label="Projected balance by month in Canadian dollars"><title>Projected account balance</title>${Array.from({length:5},(_,i)=>{let v=hi-(hi-lo)*i/4,y=Y(v);return `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="var(--line)"/><text x="${L-10}" y="${y+4}" text-anchor="end" fill="var(--muted)" font-size="12">${esc(axisMoney(v))}</text>`}).join('')}${lo<0&&hi>0?`<line x1="${L}" x2="${W-R}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--red)" stroke-dasharray="5 4"/>`:''}<polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${values.map((v,i)=>`<circle cx="${X(i)}" cy="${Y(v.b)}" r="${values.length>30?2:4}" fill="${v.b<0?'var(--red)':'var(--accent)'}"><title>${esc(v.m)}: ${esc(money(v.b))}</title></circle>`).join('')}${values.map((v,i)=>i===0||i===values.length-1||(i%step===0&&i<values.length-1-step/2)?`<text x="${X(i)}" y="${H-20}" text-anchor="${i===0?'start':i===values.length-1?'end':'middle'}" font-size="12" fill="var(--muted)">${i===0?'Today':dateObj(v.m+'-01').toLocaleDateString('en-CA',{month:'short',year:'2-digit'})}</text>`:'').join('')}</svg></div><p class="muted">Projected balance (CAD) · Hover over a point for its exact amount.</p>`
+}
+function idSelect(label,name,items,value,placeholder='Choose an option'){
+  return `<label>${label}<select name="${name}" required><option value="">${esc(placeholder)}</option>${items.map(c=>`<option value="${esc(c.id)}" ${c.id===value?'selected':''}>${esc(c.title)}</option>`).join('')}</select></label>`
+}
+function passModel(c,all){
+  const a=all.filter(x=>x.courseId===c.id),graded=a.filter(x=>x.grade!==null&&x.grade!==undefined),w=sum(graded.map(x=>x.weight)),p=sum(graded.map(x=>x.weight*x.grade/100)),f=Number(c.finalWeight??0),remaining=100-f-w,listed=sum(a.map(x=>x.weight));
+  return {
+    w,p,f,remaining,average:w?p/w*100:null,valid:remaining>=-0.00001&&listed+f<=100.00001
+  }
+}
+function requiredExam(m){
+  return (50-m.p-Math.max(0,m.remaining)*m.average/100)*100/m.f
+}
+function passingCards(courses,assessments){
+  return card('Final exam passing calculator',`<p class="muted">Required final exam grade to finish with 50% overall. Set the final exam weight in the course settings; do not add it as a regular assessment.</p>`+courses.map(c=>{
+    const m=passModel(c,assessments);
+    let result;
+    if(!m.valid)result='<p class="red">Check assessment weights: the total exceeds 100%.</p>';
+    else if(!m.f)result='<p>No final exam configured.</p>';
+    else if(m.average===null&&m.remaining>0)result='<p>Add a graded assessment to calculate an estimate.</p>';
+    else{
+      const n=requiredExam(m);
+      result=`<small>${m.remaining>0.00001?'Estimated':'Required'} final exam grade to finish with 50%</small><div class="metric ${n>100?'red':''}">${n>100?'Not achievable ('+(Math.ceil(n*100-1e-8)/100).toFixed(2)+'% needed)':(Math.ceil(n*100-1e-8)/100).toFixed(2)+'%'}</div>${n<0?'<p class="muted">Negative theoretical requirement: a 0% exam grade would still leave you above 50% '+(m.remaining>0.00001?'under this estimate.':'overall.')+'</p>':''}<p class="muted">${m.remaining>0.00001?'Assumes your remaining coursework averages '+m.average.toFixed(2)+'%. Updates as grades are entered.':'Based on confirmed coursework grades.'}</p>`
+    }
+    return `<section class="pass-course"><h3>${esc(c.title)}</h3><p>Final exam weight: ${m.f}% · Passing grade: 50%</p>${result}</section>`
+  }).join(''))
+}
+function university(){
+  migrateUniversity();
+  const sem=state.semesters.find(s=>s.id===semesterId), courses=state.courses.filter(c=>c.semesterId===semesterId), assessments=state.university.filter(a=>a.semesterId===semesterId),x=current('university'),se=current('semesters'),ce=current('courses');
+  return card('Semesters',`<div class="formgrid">${idSelect('Active semester','activeSemester',state.semesters,semesterId,'Select semester')}</div><p class="muted">Switch semesters at any time. Previous courses and grades are retained.</p>`+form('semesters',field('Semester name','title',se.title||'','text','required placeholder="e.g. Winter 2027"'))+table(['Semester','Actions'],state.semesters.map(a=>[esc(a.title),controls('semesters',a.id)])))+(!sem?'<p class="notice">Add a semester to start tracking courses.</p>':card('Courses — '+esc(sem.title),form('courses',field('Course name or code','title',ce.title||'','text','required placeholder="e.g. BADM 3000 — Finance"')+number('Final exam weight (%) — 0 if none','finalWeight',ce.finalWeight??0))+table(['Course','Graded weight','Current average','Overall points','Actions'],courses.map(c=>{
+    let a=assessments.filter(x=>x.courseId===c.id&&x.grade!==null),w=sum(a.map(x=>x.weight)),p=sum(a.map(x=>x.weight*x.grade/100));
+    if(c.finalGrade!==null&&c.finalGrade!==undefined&&c.finalWeight){
+      w+=c.finalWeight;
+      p+=c.finalWeight*c.finalGrade/100
+    }
+    return [esc(c.title),w+'%',w?(p/w*100).toFixed(2)+'%':'—',p.toFixed(2)+'%',controls('courses',c.id)]
+  })))+(courses.length?passingCards(courses,assessments):'')+(courses.length?card('Add or edit assessment',form('university',idSelect('Course','courseId',courses,x.courseId||courseFilter||'','Select course')+field('Test / assignment name','title',x.title||'','text','required')+field('Due date','date',x.date||'','date')+number('Weight (%)','weight',x.weight??'')+field('Grade (%) — optional','grade',x.grade??'','text','inputmode="decimal"')))+card('Assessments',`<label>Filter by course<select name="courseFilter"><option value="">All courses</option>${courses.map(c=>`<option value="${esc(c.id)}" ${c.id===courseFilter?'selected':''}>${esc(c.title)}</option>`).join('')}</select></label>`+table(['Course','Assessment','Due','Weight','Grade','Actions'],assessments.filter(a=>!courseFilter||a.courseId===courseFilter).map(a=>[esc(a.course),esc(a.title),esc(a.date||'—'),a.weight+'%',a.grade===null?'—':a.grade+'%',controls('university',a.id)]))):'<p class="notice">Add your courses first, then select one when adding an assessment.</p>'))
+}
+let workFilter='All', calView='Month', calAnchor=today(), txFrom='',txTo='',txCategory='All',linkCategory='All',linkQuery='';
+function work(){
+  const x=current('work'),n=state.work.length,done=state.work.filter(a=>a.status==='Done').length,progress=n?Math.round(done/n*100):0, statuses=['To do','In progress','Waiting','Done'];
+  const tasks=state.work.filter(a=>workFilter==='All'||a.status===workFilter).sort((a,b)=>(a.status==='Done')-(b.status==='Done')||(a.date||'9999').localeCompare(b.date||'9999'));
+  return card('Work overview',`<div class="row"><strong>${done} of ${n} tasks completed</strong><strong class="green">${progress}%</strong></div><div class="work-progress" role="progressbar" aria-label="Tasks completed" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"><div style="width:${progress}%"></div></div><div class="work-summary">${statuses.map(v=>`<div class="work-stat"><small>${v}</small><strong>${state.work.filter(a=>a.status===v).length}</strong></div>`).join('')}</div>`)+card(edit?.key==='work'?'Edit task':'Add task or follow-up',form('work',field('Task','title',x.title||'','text','required')+field('Due date','date',x.date||'','date')+select('Priority','priority',['Normal','High','Low'],x.priority||'Normal')+select('Status','status',statuses,x.status||'To do')+field('Notes / follow-up','notes',x.notes||'')))+card('Your tasks',`<div class="filterbar">${select('Filter by status','workFilter',['All',...statuses],workFilter)}</div><div class="task-list">${tasks.map(a=>`<article class="task-card ${a.status==='Done'?'done':''}"><div class="row"><span class="pill ${a.priority==='High'?'red':''}">${esc(a.priority)} priority</span><small class="${a.date&&a.date<today()&&a.status!=='Done'?'red':''}">${a.date?'Due '+esc(a.date):'No due date'}</small></div><h3>${esc(a.title)}</h3>${a.notes?`<p class="muted">${esc(a.notes)}</p>`:''}<label>Status<select data-work-status="${esc(a.id)}">${statuses.map(v=>`<option ${v===a.status?'selected':''}>${v}</option>`).join('')}</select></label><div class="actions">${controls('work',a.id)}</div></article>`).join('')||'<p class="muted">No matching tasks.</p>'}</div>`)+ '<p class="notice">Keep confidential employer and client data out of this personal dashboard.</p>'
+}
+function shiftDay(s,n){
+  const d=dateObj(s);
+  d.setDate(d.getDate()+n);
+  return localDate(d)
+}
+function weekStart(s){
+  return shiftDay(s,-dateObj(s).getDay())
+}
+function calItems(day){
+  return [...state.calendar.map(a=>({
+    ...a,kind:'event'
+  })),...state.university.map(a=>({
+    ...a,kind:'school',time:''
+  })),...state.work.filter(a=>a.status!=='Done').map(a=>({
+    ...a,kind:'work',time:''
+  }))].filter(a=>a.date===day).sort((a,b)=>(a.time||'').localeCompare(b.time||''))
+}
+function timeLabel(t){
+  if(!t)return '';
+  const [h,m]=t.split(':').map(Number);
+  return `${h%12||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`
+}
+function calEvent(a,extra=''){
+  return `<div class="cal-event ${a.kind} ${extra}" title="${esc((a.time?timeLabel(a.time)+' ':'')+a.title)}">${a.time?esc(timeLabel(a.time))+' ':''}${esc(a.title)}</div>`
+}
+function clockLine(){
+  const d=new Date(),line=document.querySelector('.now-line');
+  if(line)line.style.top=((d.getHours()*60+d.getMinutes())*.8)+'px';
+  if(page==='Calendar'&&document.querySelector('[data-render-day]')?.dataset.renderDay!==today())render()
+}
+function calendar(){
+  const x=current('calendar'),d=dateObj(calAnchor),first=calAnchor.slice(0,7)+'-01',start=weekStart(calView==='Month'?first:calAnchor),days=calView==='Month'?Array.from({
+    length:Math.ceil((dateObj(first).getDay()+Number(monthEnd(first.slice(0,7)).slice(-2)))/7)*7
+  },(_,i)=>shiftDay(start,i)):Array.from({
+    length:7
+  },(_,i)=>shiftDay(start,i));
+  const title=calView==='Month'?d.toLocaleDateString('en-CA',{
+    month:'long',year:'numeric'
+  }):dateObj(days[0]).toLocaleDateString('en-CA',{
+    month:'short',day:'numeric',year:'numeric'
+  })+' – '+dateObj(days[6]).toLocaleDateString('en-CA',{
+    month:'short',day:'numeric',year:'numeric'
+  });
+  let grid;
+  if(calView==='Month'){
+    grid=`<div class="month-grid">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(v=>`<div class="weekday">${v}</div>`).join('')}${days.map(day=>`<div class="${day===today()?'is-today':''} ${day.slice(0,7)!==first.slice(0,7)?'outside':''}"><span class="cal-date">${Number(day.slice(-2))}</span>${calItems(day).map(a=>calEvent(a)).join('')}</div>`).join('')}</div>`
+  } else{
+    grid=`<div class="week-grid"><div class="week-head"></div>${days.map(day=>`<div class="week-head ${day===today()?'is-today':''}">${dateObj(day).toLocaleDateString('en-CA',{weekday:'short'})}<br><span class="cal-date">${Number(day.slice(-2))}</span></div>`).join('')}<div class="week-all muted">All day</div>${days.map(day=>`<div class="week-all ${day===today()?'is-today':''}">${calItems(day).filter(a=>!a.time).map(a=>calEvent(a)).join('')}</div>`).join('')}<div class="week-hours">${Array.from({length:24},(_,h)=>`<span class="hour-label" style="top:${h*48}px">${h%12||12} ${h<12?'AM':'PM'}</span>`).join('')}</div>${days.map(day=>`<div class="week-day ${day===today()?'is-today':''}">${calItems(day).filter(a=>a.time).map(a=>{const [h,m]=a.time.split(':').map(Number);return calEvent(a,'week-event').replace(' title=',` style="top:${(h*60+m)*.8}px" title=`)}).join('')}${day===today()?'<div class="now-line"></div>':''}</div>`).join('')}</div>`
+  }
+  return card('Schedule',`<div data-render-day="${today()}" class="cal-toolbar"><div class="row"><button class="secondary" data-cal="-1">←</button><button class="secondary" data-cal="today">Today</button><button class="secondary" data-cal="1">→</button><strong>${title}</strong></div><div class="row"><button class="${calView==='Month'?'':'secondary'}" data-cal-view="Month">Month</button><button class="${calView==='Week'?'':'secondary'}" data-cal-view="Week">Week</button></div></div><div class="cal-scroll">${grid}</div><p class="muted">Blue: calendar · Green: university · Orange: work deadlines. Timed events show their start time.</p>`)+card(edit?.key==='calendar'?'Edit event':'Add event',form('calendar',field('Event','title',x.title||'','text','required')+field('Date','date',x.date||today(),'date','required')+field('Time','time',x.time||'','time')+field('Location / notes','notes',x.notes||'')))+card('Events',table(['Date','Time','Event','Notes','Actions'],[...state.calendar].sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(timeLabel(a.time)||'—'),esc(a.title),esc(a.notes),controls('calendar',a.id)])))
+}
+function vehicle(){
+  const x=current('vehicle');
+  return card('Maintenance record',form('vehicle',field('Service / repair','title',x.title||'','text','required')+field('Date','date',x.date||today(),'date','required')+number('Odometer (km)','mileage',x.mileage??'',true)+number('Cost (CAD)','amount',x.amount??'')+field('Next service date','next',x.next||'','date')+field('Notes','notes',x.notes||'')))+`<div class="grid">${metric('Latest recorded mileage',state.vehicle.length?Math.max(...state.vehicle.map(a=>a.mileage)).toLocaleString()+' km':'—')}${metric('Total recorded service costs',money(sum(state.vehicle.map(a=>a.amount))))}</div>`+card('Service history',table(['Date','Service','Mileage','Cost','Next service','Notes','Actions'],state.vehicle.map(a=>[esc(a.date),esc(a.title),a.mileage.toLocaleString()+' km',money(a.amount),esc(a.next||'—'),esc(a.notes),controls('vehicle',a.id)])))
+}
+function knowledge(){
+  const x=current('knowledge');
+  return card('Add or edit note',form('knowledge',field('Title','title',x.title||'','text','required')+field('Category','category',x.category||'General')+`<label style="grid-column:1/-1">Note<textarea name="notes" required>${esc(x.notes||'')}</textarea></label>`))+card('Notes',`<input id="noteSearch" placeholder="Search notes…"><div id="noteList">${notesHTML('')}</div>`)
+}
+function notesHTML(q){
+  return state.knowledge.filter(a=>(a.title+' '+a.category+' '+a.notes).toLowerCase().includes(q.toLowerCase())).map(a=>`<article style="border-bottom:1px solid var(--line);padding:14px 0"><div class="row"><strong>${esc(a.title)}</strong><small>${esc(a.category)}</small></div><p style="white-space:pre-wrap">${esc(a.notes)}</p>${controls('knowledge',a.id)}</article>`).join('')||'<p class="muted">No matching notes.</p>'
+}
+function safeURL(s){
+  try{
+    const u=new URL(s);
+    return ['http:','https:'].includes(u.protocol)?u.href:''
+  } catch{
+    return ''
+  }
+}
+function linkRows(){
+  const q=linkQuery.toLowerCase(),rows=state.links.filter(a=>(linkCategory==='All'||a.category===linkCategory)&&[a.title,a.url,a.category].some(v=>String(v||'').toLowerCase().includes(q)));
+  return `<p class="filter-summary">${rows.length} of ${state.links.length} links</p>`+table(['Name','Category','Actions'],rows.map(a=>[`<a href="${esc(safeURL(a.url)||'#')}" target="_blank" rel="noopener noreferrer">${esc(a.title)}</a>`,esc(a.category),controls('links',a.id)]))
+}
+function links(){
+  const x=current('links');
+  return card('Add bookmark',form('links',field('Name','title',x.title||'','text','required')+field('Website URL','url',x.url||'','url','required')+field('Category','category',x.category||'General')))+card('Your links',`<div class="filterbar">${field('Search links','linkQuery',linkQuery,'search')}${select('Category','linkCategory',['All',...new Set(state.links.map(a=>a.category).filter(Boolean))],linkCategory)}<button class="secondary" data-clear-links>Clear filters</button></div><div id="linkRows">${linkRows()}</div>`)
+}
+function settings(){
+  return card('Preferences',`<form id="settingsForm"><div class="formgrid">${number('Opening balance (CAD)','opening',state.opening,false,true)}${number('Savings target (%)','budget',state.budget)}${select('Appearance','theme',['light','dark'],state.theme)}</div><p class="muted">Opening balance means your balance immediately before the earliest transaction you enter. All entered transactions are added to or deducted from this balance.</p><button>Save preferences</button></form>`)+card('Data and backups',`<p>Your data is saved in this browser only. Export backups before moving to a new device or clearing browser data.</p><div class="actions"><button id="export">Export JSON backup</button><button class="secondary" id="csv">Export finance CSV</button><button class="secondary" id="import">Import JSON backup</button><button class="danger" id="reset">Delete all data</button></div><input id="importFile" type="file" accept="application/json,.json" hidden style="display:none">`)+card('About this prototype','<p>Single-file local HTML application. No login, Firebase, external APIs or network requests. Data does not sync between devices. Local file storage behavior varies by browser.</p>')
+}
+function download(name,body,type){
+  const u=URL.createObjectURL(new Blob([body],{
+    type
+  })),a=document.createElement('a');
+  a.href=u;
+  a.download=name;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(u),1000)
+}
+function showDelete(key,id){
+  const item=state[key]?.find(a=>String(a.id)===id);
+  if(!item){
+    notify('Entry not found');
+    return
+  }
+  if(key==='semesters'&&state.courses.some(c=>c.semesterId===id)){
+    notify('Delete courses in this semester before deleting it.');
+    return
+  }
+  if(key==='courses'&&state.university.some(a=>a.courseId===id)){
+    notify('Delete assessments in this course before deleting it.');
+    return
+  }
+  const overlay=document.createElement('div');
+  overlay.className='delete-overlay';
+  overlay.innerHTML=`<section class="card delete-box" role="alertdialog" aria-modal="true" aria-label="Confirm deletion"><h2>Delete entry?</h2><p>${esc(item.title||item.course||'This entry')} will be removed.${item.repeat&&item.repeat!=='Once'?' All occurrences of this recurring transaction will be removed.':''}</p><div class="actions"><button type="button" class="secondary" data-no>Cancel</button><button type="button" class="danger" data-yes>Delete</button></div></section>`;
+  document.body.append(overlay);
+  const close=()=>{
+    overlay.remove();
+    document.removeEventListener('keydown',onKey)
+  };
+  const onKey=e=>{
+    if(e.key==='Escape')close()
+  };
+  document.addEventListener('keydown',onKey);
+  overlay.querySelector('[data-no]').onclick=close;
+  overlay.querySelector('[data-yes]').onclick=()=>{
+    state[key]=state[key].filter(a=>String(a.id)!==id);
+    edit=null;
+    close();
+    save();
+    render();
+    notify(storageOK?'Entry deleted':'Deleted for this session only — export a backup.')
+  };
+  overlay.querySelector('[data-no]').focus()
+}
+function bind(){
+  const root=$('content');
+  root.oninput=e=>{
+    if(e.target.name==='linkQuery'){
+      linkQuery=e.target.value;
+      $('linkRows').innerHTML=linkRows()
+    }
+  };
+  if(page==='Calendar'){
+    clockLine();
+  }
+  root.onchange=e=>{
+    const el=e.target;
+    if(['workFilter','txFrom','txTo','txCategory','linkCategory'].includes(el.name)){
+      if(el.name==='workFilter')workFilter=el.value;
+      if(el.name==='txFrom')txFrom=el.value;
+      if(el.name==='txTo')txTo=el.value;
+      if(el.name==='txCategory')txCategory=el.value;
+      if(el.name==='linkCategory')linkCategory=el.value;
+      render();
+      return
+    }
+    if(el.name==='activeSemester'){
+      semesterId=el.value;
+      courseFilter='';
+      edit=null;
+      render();
+      return
+    }
+    if(el.name==='courseFilter'){
+      courseFilter=el.value;
+      render();
+      return
+    }
+    if(!el.matches('[data-work-status]'))return;
+    const task=state.work.find(a=>String(a.id)===el.dataset.workStatus);
+    if(task){
+      task.status=el.value;
+      save();
+      render();
+      notify(storageOK?'Status updated':'Status updated for this session only')
+    }
+  };
+  root.onclick=e=>{
+    const b=e.target.closest('button');
+    if(!b)return;
+    if(b.dataset.go)go(b.dataset.go);
+    if(b.dataset.edit){
+      const [key,id]=b.dataset.edit.split(':');
+      edit={
+        key,id
+      };
+      render();
+      window.scrollTo(0,0)
+    }
+    if(b.dataset.delete){
+      const [key,id]=b.dataset.delete.split(':');
+      showDelete(key,id)
+    }
+    if(b.hasAttribute('data-cancel')){
+      edit=null;
+      render()
+    }
+    if(b.dataset.cal){
+      calAnchor=b.dataset.cal==='today'?today():calView==='Week'?shiftDay(calAnchor,7*Number(b.dataset.cal)):addMonths(calAnchor,Number(b.dataset.cal));
+      calMonth=calAnchor.slice(0,7);
+      render()
+    }
+    if(b.dataset.calView){
+      calView=b.dataset.calView;
+      render()
+    }
+    if(b.hasAttribute('data-clear-tx')){
+      txFrom='';
+      txTo='';
+      txCategory='All';
+      render()
+    }
+    if(b.hasAttribute('data-clear-links')){
+      linkCategory='All';
+      linkQuery='';
+      render()
+    }
+  };
+  root.querySelectorAll('form[data-form]').forEach(f=>{
+    const submit=e=>{
+      e.preventDefault();
+      const error=f.querySelector(".form-error");
+      error.hidden=true;
+      try{
+        for(const input of f.elements){
+          if(!input.name)continue;
+          if(input.required&&!String(input.value).trim()){
+            input.focus();
+            throw Error("Please enter "+input.closest("label").firstChild.textContent.trim()+".")
+          }
+          if(!input.checkValidity()&&input.validity.typeMismatch){
+            input.focus();
+            throw Error("Please enter a valid "+input.closest("label").firstChild.textContent.trim()+".")
+          }
+        }
+        let key=f.dataset.form,a=Object.fromEntries(new FormData(f));
+        if(key==='semesters'&&state.semesters.some(s=>s.title.toLowerCase()===a.title.trim().toLowerCase()&&s.id!==edit?.id))throw Error('This semester already exists.');
+        if(key==='courses'){
+          a.finalWeight=parseAmount(a.finalWeight);
+          if(a.finalWeight<0||a.finalWeight>100)throw Error('Final exam weight must be between 0 and 100.');
+          const previous=state.courses.find(c=>c.id===edit?.id);
+          a.finalGrade=previous?.finalGrade??null;
+          if(sum(state.university.filter(x=>x.courseId===edit?.id).map(x=>x.weight))+a.finalWeight>100.00001)throw Error('Assessment weights plus final exam weight cannot exceed 100%.');
+          a.semesterId=semesterId;
+          if(state.courses.some(c=>c.semesterId===semesterId&&c.title.toLowerCase()===a.title.trim().toLowerCase()&&c.id!==edit?.id))throw Error('This course already exists in this semester.')
+        }
+        if(key==='university'){
+          const c=state.courses.find(c=>c.id===a.courseId&&c.semesterId===semesterId);
+          if(!c)throw Error('Select a course.');
+          a.course=c.title;
+          a.semesterId=semesterId;
+        }
+        if(key==='transactions'&&!a.title.trim())a.title=a.category==='Other'?a.type:a.category;
+        for(const k of ['amount','mileage','weight','grade'])if(k in a)a[k]=k==='grade'&&a[k].trim()===''?null:parseAmount(a[k]);
+        if(key==='transactions'&&(a.amount<=0||a.end&&a.end<a.date))throw Error('Enter a positive amount and an end date on or after the start date.');
+        if(key==='university'&&(a.weight<0||a.weight>100||a.grade!==null&&(a.grade<0||a.grade>100)))throw Error('Grades and weights must be between 0 and 100.');
+        if(key==='university'&&sum(state.university.filter(x=>x.courseId===a.courseId&&x.id!==edit?.id).map(x=>x.weight))+a.weight+Number(state.courses.find(c=>c.id===a.courseId)?.finalWeight??0)>100.00001)throw Error('Assessment weights plus final exam weight cannot exceed 100%. Enter the final exam separately in course settings.');
+        if(key==='vehicle'&&(!Number.isInteger(a.mileage)||a.mileage<0||a.amount<0))throw Error('Enter a whole nonnegative mileage and valid cost.');
+        if(key==='links'&&!safeURL(a.url))throw Error('Enter an HTTP or HTTPS website URL.');
+        if(edit?.key===key){
+          a.id=edit.id;
+          state[key]=state[key].map(x=>x.id===a.id?a:x)
+        } else{
+          a.id=uid();
+          state[key].push(a)
+        }
+        if(key==='semesters'){
+          semesterId=a.id;
+          courseFilter=''
+        }
+        if(key==='courses'){
+          state.university.filter(x=>x.courseId===a.id).forEach(x=>x.course=a.title)
+        }
+        edit=null;
+        if(key==='calendar'){
+          calMonth=a.date.slice(0,7);
+          calAnchor=a.date;
+        }
+        if(key==='transactions')month=a.date.slice(0,7);
+        save();
+        render();
+        notify(storageOK?'Saved successfully':'Added for this session only — export a backup.')
+      } catch(err){
+        error.textContent=err.message;
+        error.hidden=false;
+        notify(err.message)
+      }
+    };
+    f.onsubmit=submit;
+    f.querySelector('[data-save-form]').onclick=submit;
+  });
+  const fm=root.querySelector('[name=financeMonth]');
+  if(fm)fm.onchange=()=>{
+    if(fm.value){
+      month=fm.value;
+      render()
+    }
+  };
+  if($('horizon'))$('horizon').onchange=e=>{
+    state.projection=Number(e.target.value);
+    save();
+    render()
+  };
+  if($('noteSearch'))$('noteSearch').oninput=e=>$('noteList').innerHTML=notesHTML(e.target.value);
+  if($('settingsForm'))$('settingsForm').onsubmit=e=>{
+    e.preventDefault();
+    try{
+      const f=new FormData(e.target),o=parseAmount(f.get('opening')),b=parseAmount(f.get('budget'));
+      if(b<0||b>100)throw Error('Savings target must be 0–100%.');
+      state.opening=o;
+      state.budget=b;
+      state.theme=f.get('theme');
+      save();
+      render();
+      notify('Preferences saved')
+    } catch(err){
+      notify(err.message)
+    }
+  };
+  if($('export'))$('export').onclick=()=>download('my-life-backup.json',JSON.stringify(state,null,2),'application/json');
+  if($('csv'))$('csv').onclick=()=>{
+    const keys=['date','type','title','category','amount','repeat','end'],quote=v=>'"'+String(v??'').replace(/^[=+@-]/,"'$&").replace(/"/g,'""')+'"';
+    download('finance.csv',[keys.join(','),...state.transactions.map(a=>keys.map(k=>quote(a[k])).join(','))].join('\r\n'),'text/csv')
+  };
+  if($('reset'))$('reset').onclick=()=>{
+    if(confirm('Permanently delete all dashboard data from this browser?')){
+      state=defaults();
+      save();
+      go('Home')
+    }
+  };
+  if($('import')){
+    $('import').onclick=()=>$('importFile').click();
+    $('importFile').onchange=async e=>{
+      try{
+        const data=JSON.parse(await e.target.files[0].text()),base=defaults();
+        for(const k of Object.keys(base).filter(k=>Array.isArray(base[k])))if((['semesters','courses'].includes(k)&&data[k]===undefined)?false:!Array.isArray(data[k])||data[k].some(a=>!a||typeof a.id!=='string'||!/^[a-zA-Z0-9-]+$/.test(a.id)))throw Error('Invalid backup file.');
+        if(!Number.isFinite(data.opening)||!Number.isFinite(data.budget)||data.budget<0||data.budget>100||![3,6,12,24,60,120].includes(data.projection)||!['light','dark'].includes(data.theme))throw Error('Invalid backup preferences.');
+        if(data.transactions.some(a=>!/^\d{4}-\d{2}-\d{2}$/.test(a.date)||!Number.isFinite(a.amount)||a.amount<=0||!['Once','Weekly','Biweekly','Monthly','Yearly'].includes(a.repeat)||!['Income','Expense'].includes(a.type)))throw Error('Invalid transaction records.');
+        if(confirm('Replace all current dashboard data with this backup?')){
+          state={
+            ...base,...data
+          };
+          semesterId='';
+          courseFilter='';
+          migrateUniversity();
+          save();
+          go('Home')
+        }
+      } catch(err){
+        notify(err.message)
+      }
+    }
+  }
+}
+render();
+setInterval(()=>{
+  if(page==='Calendar')clockLine()
+},15000);
+</script>
+</body>
+</html>
