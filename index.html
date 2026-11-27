@@ -886,6 +886,9 @@ body:not(.authenticated)>aside,body:not(.authenticated)>main{display:none}
 /* Orange logo accent on neutral controls only; preserve primary and destructive actions. */
 @media (hover:hover){button.secondary:not(.danger):not(.action-delete):not(.active):not(:disabled):not([style*="background"]):not([data-linked-copy]):not([onclick^="copyDynamicText("]):hover{border-color:#ff8a3d!important}button.action-edit:not(.danger):not(.action-delete):not(:disabled):hover,body.dark button.action-edit:not(.danger):not(.action-delete):not(:disabled):hover{border-color:#ff8a3d!important}button.tile:not(:disabled):hover{border-color:#ff8a3d!important}}
 .tile .tile-icon{display:block;color:var(--text);height:30px}.tile .nav-mono-icon{display:block;width:30px;height:30px;color:inherit}
+
+/* Match neutral input and dropdown hover borders to the MyLife leaf. */
+@media (hover:hover){input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not([type=hidden]):not(:disabled):hover,select:not(:disabled):hover,textarea:not(:disabled):hover,.tx-filter-dropdown summary:hover{border-color:#ff8a3d!important}}
 </style>
 <div id="authGate"><div class="login-shell">
 <div class="login-brand"><img src="./mylife-sidebar.svg?v=3" alt="" width="43" height="28"><span>MyLife - Dashboard</span></div>
@@ -1827,7 +1830,7 @@ function vehicle(){
   return card('Maintenance record',form('vehicle',field('Service / repair','title',x.title||'','text','required')+field('Date','date',x.date||today(),'date','required')+field('Odometer (km, optional)','mileage',x.mileage??'','text','inputmode="numeric" autocomplete="off"')+number('Cost (CAD)','amount',x.amount??'')+field('Next service date','next',x.next||'','date')+field('Notes','notes',x.notes||'')))+`<div class="grid">${metric('Latest recorded mileage',latestVehicleMileage(state.vehicle))}${metric('Total recorded service costs',money(sum(state.vehicle.map(a=>a.amount))))}</div>`+card('Service history',table(['Date','Service','Mileage','Cost','Next service','Notes','Actions'],state.vehicle.map(a=>[esc(a.date),esc(a.title),Number.isFinite(a.mileage)?a.mileage.toLocaleString()+' km':'—',money(a.amount),esc(a.next||'—'),esc(a.notes),controls('vehicle',a.id)])))
 }
 function workspace(){
-  return '<iframe id="workspaceFrame" title="Workspace" src="workspace.html?v=orange-hover-3" style="width:100%;height:calc(100vh - 130px);min-height:560px;border:0;display:block;background:var(--bg)" allow="clipboard-write"></iframe>';
+  return '<iframe id="workspaceFrame" title="Workspace" src="workspace.html?v=orange-hover-4" style="width:100%;height:calc(100vh - 130px);min-height:560px;border:0;display:block;background:var(--bg)" allow="clipboard-write"></iframe>';
 }
 window.dashboardWorkspace={
   read(sender){
