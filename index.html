@@ -891,6 +891,34 @@ body:not(.authenticated)>aside,body:not(.authenticated)>main{display:none}
 @media (hover:hover){input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not([type=hidden]):not(:disabled):hover,select:not(:disabled):hover,textarea:not(:disabled):hover,.tx-filter-dropdown summary:hover{border-color:#ff8a3d!important}}
 
 #googleEventForm .google-all-day{display:flex;align-items:center;justify-content:flex-start;gap:9px;margin:12px 0;cursor:pointer;line-height:1.4}#googleEventForm .google-all-day input{width:16px;height:16px;flex:0 0 16px;margin:0;padding:0;accent-color:var(--accent);cursor:pointer}
+
+/* Independent 7.5-hour week viewport with aligned fixed headers. */
+.cal-scroll.cal-week-scroll{overflow-x:auto;overflow-y:hidden}
+.cal-week-scroll .week-fixed,.cal-week-scroll .week-time-scroll{min-width:735px}
+.cal-week-scroll .week-fixed{background:var(--calendar-bg)}
+.cal-week-scroll .week-time-scroll{height:450px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;touch-action:pan-y;overscroll-behavior-y:auto}
+.cal-week-scroll .week-time-scroll::-webkit-scrollbar{width:0;height:0}
+.cal-week-scroll .week-time-scroll:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.cal-week-scroll .week-grid,.cal-week-scroll .week-banner-grid{min-width:0;grid-template-columns:58px repeat(7,minmax(0,1fr))}
+.cal-week-scroll .week-day,.cal-week-scroll .week-head,.cal-week-scroll .week-hours{min-width:0}
+@media(max-width:760px){
+ .cal-scroll.cal-week-scroll{overflow-x:hidden;width:100%;max-width:100%}
+ .cal-week-scroll .week-fixed,.cal-week-scroll .week-time-scroll{min-width:0;width:100%}
+ .cal-week-scroll .week-grid,.cal-week-scroll .week-banner-grid{grid-template-columns:32px repeat(7,minmax(0,1fr));min-width:0}
+ .cal-week-scroll .week-head{font-size:9px;letter-spacing:0;padding:6px 0 4px;white-space:nowrap;overflow:hidden}
+ .cal-week-scroll .cal-date{width:26px;height:26px;font-size:16px;margin-top:3px}
+ .cal-week-scroll .hour-label{font-size:8px;right:3px;letter-spacing:-.3px}
+ .cal-week-scroll .week-banner-label{font-size:8px;padding:3px 1px}
+ .cal-week-scroll .week-banner{font-size:9px;margin:2px 1px 0;padding:3px 2px;line-height:14px}
+ .cal-week-scroll .week-banner.continues-before{padding-left:7px}
+ .cal-week-scroll .week-banner.continues-after{padding-right:7px}
+ .cal-week-scroll .week-event,.cal-week-scroll .week-event.compact{padding:2px 2px;border-radius:3px}
+ .cal-week-scroll .week-event .event-title,.cal-week-scroll .week-event.compact .event-title{font-size:10px;line-height:1.15;display:block;overflow-wrap:anywhere}
+ .cal-week-scroll .week-event .event-time,.cal-week-scroll .week-event.compact .event-time{font-size:8px;line-height:1.12;display:block;overflow-wrap:anywhere}
+ .cal-week-scroll .week-event .event-location{display:none}
+ .cal-week-scroll .now-line:before{width:6px;height:6px;top:-2px;left:-3px}
+ #content>.card:has(.cal-week-scroll){padding:10px}
+}
 </style>
 <div id="authGate"><div class="login-shell">
 <div class="login-brand"><img src="./mylife-sidebar.svg?v=3" alt="" width="43" height="28"><span>MyLife - Dashboard</span></div>
@@ -988,6 +1016,8 @@ function go(p){
 }
 const navMonoIcons={"Home":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m3 10 9-7 9 7M5 9v11h14V9M9 20v-7h6v7\"/></svg>","University":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m2 9 10-5 10 5-10 5-10-5ZM6 11v6c3 3 9 3 12 0v-6M22 9v6\"/></svg>","Work":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"7\" width=\"18\" height=\"14\" rx=\"2\"/><path d=\"M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18M10 13v2h4v-2\"/></svg>","Calendar":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"2\"/><path d=\"M16 3v4M8 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01\"/></svg>","Finances":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"9\" cy=\"9\" r=\"6\"/><path d=\"M9 6v6M15.5 9.5a6 6 0 1 1-6 6M16 14v5\"/></svg>","Vehicle":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m5 11 2-6h10l2 6M3 15v-2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2M3 15h18v4H3zM5 19v2M19 19v2M7 15h.01M17 15h.01\"/></svg>","Workspace":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"4\" y=\"4\" width=\"16\" height=\"13\" rx=\"2\"/><path d=\"m4 17-2 3h20l-2-3\"/></svg>","Settings":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m10 3 4 0 .7 2.5 2 .9 2.3-1.2 2 3.5-1.9 1.7v3.2l1.9 1.7-2 3.5-2.3-1.2-2 .9L14 21h-4l-.7-2.5-2-.9L5 18.8l-2-3.5 1.9-1.7v-3.2L3 8.7l2-3.5 2.3 1.2 2-.9L10 3Z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>"};
 function render(){
+  const oldWeek=document.querySelector('#content .cal-week-scroll');
+  const weekPosition=oldWeek?{key:oldWeek.dataset.weekKey,top:oldWeek.querySelector('.week-time-scroll')?.scrollTop??480,left:oldWeek.scrollLeft}:null;
   document.body.classList.toggle('dark',state.theme==='dark');
   $('heading').textContent=page==='Home'?'Overview':page;
   $('today').textContent=new Date().toLocaleDateString('en-CA',{
@@ -998,7 +1028,9 @@ function render(){
   $('content').innerHTML=(!storageOK?'<p class="notice">Browser storage is unavailable. Export a backup before closing.</p>':'')+({
     Home:home,Finances:finance,University:university,Work:work,Calendar:calendar,Vehicle:vehicle,Workspace:workspace,Settings:settings
   }[page])();
-  bind()
+  bind();
+  const newWeek=document.querySelector('#content .cal-week-scroll');
+  if(newWeek){const sc=newWeek.querySelector('.week-time-scroll');if(sc){sc.scrollTop=weekPosition?.key===newWeek.dataset.weekKey?weekPosition.top:480;newWeek.scrollLeft=weekPosition?.key===newWeek.dataset.weekKey?weekPosition.left:0;}}
 }
 $('theme').onclick=()=>{
   state.theme=state.theme==='dark'?'light':'dark';
@@ -1822,7 +1854,7 @@ function calendarGrid(){
   if(calView==='Month'){
     grid=`<div class="month-grid">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(v=>`<div class="weekday">${v}</div>`).join('')}${Array.from({length:days.length/7},(_,i)=>monthWeekHTML(days.slice(i*7,i*7+7),first.slice(0,7))).join('')}</div>`
   } else{
-    grid=`<div class="week-grid"><div class="week-head"></div>${days.map(day=>`<div class="week-head ${day===easternToday()?'is-today':''}">${dateObj(day).toLocaleDateString('en-CA',{weekday:'short'})}<br><span class="cal-date">${Number(day.slice(-2))}</span></div>`).join('')}${weekBannerHTML(days)}<div class="week-hours">${Array.from({length:24},(_,h)=>`<span class="hour-label" style="top:${h*60}px">${h%12||12} ${h<12?'AM':'PM'}</span>`).join('')}</div>${days.map(day=>`<div class="week-day ${day===easternToday()?'is-today':''}">${layoutWeekEvents(calItems(day).filter(a=>a.time&&!bannerEvent(a))).map(item=>calEvent(item.a,'week-event',item)).join('')}${day===easternToday()?'<div class="now-line"></div>':''}</div>`).join('')}</div>`
+    grid=`<div class="week-fixed"><div class="week-grid"><div class="week-head"></div>${days.map(day=>`<div class="week-head ${day===easternToday()?'is-today':''}">${dateObj(day).toLocaleDateString('en-CA',{weekday:'short'})}<br><span class="cal-date">${Number(day.slice(-2))}</span></div>`).join('')}${weekBannerHTML(days)}</div></div><div class="week-time-scroll" tabindex="0" aria-label="Week schedule, scroll to see all hours"><div class="week-grid week-time-grid"><div class="week-hours">${Array.from({length:24},(_,h)=>`<span class="hour-label" style="top:${h*60}px">${h%12||12} ${h<12?'AM':'PM'}</span>`).join('')}</div>${days.map(day=>`<div class="week-day ${day===easternToday()?'is-today':''}">${layoutWeekEvents(calItems(day).filter(a=>a.time&&!bannerEvent(a))).map(item=>calEvent(item.a,'week-event',item)).join('')}${day===easternToday()?'<div class="now-line"></div>':''}</div>`).join('')}</div></div>`
   }
   return {grid,title};
 }
@@ -1832,17 +1864,18 @@ function refreshCalendarVisibility(checkbox){
   // Keep the actual checkbox and forms mounted. Calendar height can change
   // when events disappear, so compensate using the checkbox as a visual anchor.
   const top=checkbox.getBoundingClientRect().top;
-  const x=scroll.scrollLeft,y=scroll.scrollTop;
+  const x=scroll.scrollLeft,y=scroll.scrollTop,timeY=scroll.querySelector('.week-time-scroll')?.scrollTop;
   const pageX=window.scrollX;
   scroll.innerHTML=calendarGrid().grid;
   scroll.scrollLeft=x;scroll.scrollTop=y;
+  const timeScroll=scroll.querySelector('.week-time-scroll');if(timeScroll&&timeY!=null)timeScroll.scrollTop=timeY;
   clockLine();
   const delta=checkbox.getBoundingClientRect().top-top;
   if(Math.abs(delta)>0.5)window.scrollTo({left:pageX,top:window.scrollY+delta,behavior:'instant'});
 }
 function calendar(){
   const x=current('calendar'),{grid,title}=calendarGrid();
-  return card('Schedule',`<div data-render-day="${easternToday()}" class="cal-toolbar"><div class="row"><button class="secondary" data-cal="-1">←</button><button class="secondary" data-cal="today">Today</button><button class="secondary" data-cal="1">→</button><strong>${title}</strong></div><div class="row"><button class="${calView==='Month'?'':'secondary'}" data-cal-view="Month">Month</button><button class="${calView==='Week'?'':'secondary'}" data-cal-view="Week">Week</button></div></div><div class="cal-scroll">${grid}</div><p class="muted">Google Calendar colours · Eastern time (Toronto) · Click a Google event for details.</p>`)+googlePanel()+card(edit?.key==='calendar'?'Edit event':'Add event',form('calendar',field('Event','title',x.title||'','text','required')+field('Date','date',x.date||easternToday(),'date','required')+field('Time','time',x.time||'','time')+field('Location / notes','notes',x.notes||'')))+card('Events',table(['Date','Time','Event','Notes','Actions'],[...state.calendar].sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(timeLabel(a.time)||'—'),esc(a.title),esc(a.notes),controls('calendar',a.id)])))+eventSearchCard()
+  return card('Schedule',`<div data-render-day="${easternToday()}" class="cal-toolbar"><div class="row"><button class="secondary" data-cal="-1">←</button><button class="secondary" data-cal="today">Today</button><button class="secondary" data-cal="1">→</button><strong>${title}</strong></div><div class="row"><button class="${calView==='Month'?'':'secondary'}" data-cal-view="Month">Month</button><button class="${calView==='Week'?'':'secondary'}" data-cal-view="Week">Week</button></div></div><div class="cal-scroll ${calView==='Week'?'cal-week-scroll':''}" data-week-key="${calView==='Week'?weekStart(calAnchor):''}">${grid}</div><p class="muted">Google Calendar colours · Eastern time (Toronto) · Click a Google event for details.</p>`)+googlePanel()+card(edit?.key==='calendar'?'Edit event':'Add event',form('calendar',field('Event','title',x.title||'','text','required')+field('Date','date',x.date||easternToday(),'date','required')+field('Time','time',x.time||'','time')+field('Location / notes','notes',x.notes||'')))+card('Events',table(['Date','Time','Event','Notes','Actions'],[...state.calendar].sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(timeLabel(a.time)||'—'),esc(a.title),esc(a.notes),controls('calendar',a.id)])))+eventSearchCard()
 }
 function latestVehicleMileage(rows){const values=rows.map(a=>a.mileage).filter(n=>Number.isFinite(n));return values.length?Math.max(...values).toLocaleString()+' km':'—';}
 function vehicle(){
