@@ -1160,6 +1160,7 @@ async function googleRestore(){
 
 const googleScopes='https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.calendars.readonly';
 function googleDisconnect(revoke=true){
+  resetEventSearch();
   const token=googleToken;googleSession++;googleFetchId++;googleToken='';googleExpiry=0;googleCalendars=[];googleEvents=[];googleVisible.clear();googleEdit=null;googleMessage='';googleBusy=false;
   if(revoke)googleForget();
   if(revoke&&token&&window.google?.accounts?.oauth2)google.accounts.oauth2.revoke(token,()=>{});
@@ -1527,6 +1528,51 @@ function monthWeekHTML(days,month){
   }).join('');
   return '<div class="month-week" style="grid-template-rows:32px '+(lanes?'repeat('+lanes+',23px) ':'')+'minmax(0,1fr)">'+cells+banners+'</div>';
 }
+
+let eventSearch={query:'',from:'',to:'',rows:[],status:'',seq:0,session:-1};
+function resetEventSearch(){eventSearch={query:'',from:'',to:'',rows:[],status:'',seq:eventSearch.seq+1,session:-1};}
+function eventSearchDates(){const d=easternToday();return {from:eventSearch.from||addMonths(d,-12),to:eventSearch.to||addMonths(d,12)};}
+function searchEventMatch(a,q){return [a.title,a.calendar,a.notes].some(v=>String(v||'').toLowerCase().includes(q.toLowerCase()));}
+function searchGoogleRow(e,cal){
+ const all=!!e.start.date,s=all?{date:e.start.date,time:''}:easternParts(new Date(e.start.dateTime));
+ const end=all?{date:e.end?.date?shiftDay(e.end.date,-1):s.date,time:''}:e.end?.dateTime?easternParts(new Date(e.end.dateTime)):s;
+ return {title:e.summary||'(Untitled)',date:s.date,time:s.time,endDate:end.date,endTime:end.time,calendar:cal.summary,notes:e.location||'',all,link:e.htmlLink||''};
+}
+function searchLocalEvents(q,from,to){
+ return [...state.calendar.map(a=>({...a,calendar:'Dashboard events'})),...state.university.map(a=>({...a,time:'',calendar:'University'})),...state.work.filter(a=>a.status!=='Done').map(a=>({...a,time:'',calendar:'Work'}))].filter(a=>a.date&&a.date>=from&&a.date<=to&&searchEventMatch(a,q)).map(a=>({...a,endDate:a.date,all:!a.time}));
+}
+function searchEventWhen(a){
+ const date=s=>dateObj(s).toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+ if(a.all)return date(a.date)+(a.endDate&&a.endDate!==a.date?' – '+date(a.endDate):'')+' · All day';
+ return date(a.date)+' · '+timeLabel(a.time)+(a.endTime?' – '+(a.endDate!==a.date?date(a.endDate)+' · ':'')+timeLabel(a.endTime):'');
+}
+function eventSearchResults(){
+ const rows=eventSearch.rows;
+ return '<p class="muted" role="status">'+esc(eventSearch.status||'Enter a search term and select Search.')+'</p>'+ (rows.length?table(['Event','Date & time (Toronto)','Calendar','Location'],rows.map(a=>[esc(a.title),esc(searchEventWhen(a)),esc(a.calendar),esc(a.notes||'—')])):'');
+}
+function eventSearchCard(){
+ const d=eventSearchDates();
+ return card('Search events','<form id="eventSearchForm"><div class="formgrid">'+field('Search events','eventQuery',eventSearch.query,'search','required')+field('From','eventFrom',d.from,'date','required')+field('To','eventTo',d.to,'date','required')+'</div><div class="actions"><button type="submit">Search</button><button type="button" class="secondary" id="eventSearchClear">Clear</button></div></form><p class="muted">Searches all connected Google calendars and dashboard events in the selected date range, including recurring occurrences. Default: one year before and after today.</p><div id="eventSearchResults">'+eventSearchResults()+'</div>');
+}
+async function runEventSearch(form){
+ const f=new FormData(form),q=String(f.get('eventQuery')||'').trim(),from=String(f.get('eventFrom')||''),to=String(f.get('eventTo')||'');
+ if(!q||!from||!to||from>to){notify('Enter a search term and a valid date range.');return;}
+ const seq=++eventSearch.seq,session=googleSession,owner=googleOwner;
+ Object.assign(eventSearch,{query:q,from,to,rows:searchLocalEvents(q,from,to),status:'Searching…',session});
+ const show=()=>{if(page==='Calendar'&&$('eventSearchResults'))$('eventSearchResults').innerHTML=eventSearchResults();};
+ show();
+ if(!googleToken){eventSearch.status=eventSearch.rows.length+' dashboard matches. Connect Google Calendar to search Google events.';show();return;}
+ const params={q,timeMin:easternInstant(from+'T00:00'),timeMax:easternInstant(shiftDay(to,1)+'T00:00'),singleEvents:'true',orderBy:'startTime',maxResults:'250',timeZone:calendarZone};
+ let batches;
+ try{batches=await Promise.allSettled(googleCalendars.map(async cal=>(await googleList('calendars/'+encodeURIComponent(cal.id)+'/events',params)).filter(e=>e.status!=='cancelled'&&e.start).map(e=>searchGoogleRow(e,cal))));}
+ catch(e){batches=[];}
+ if(seq!==eventSearch.seq||session!==googleSession||owner!==googleOwner||!cloudReady)return;
+ eventSearch.rows.push(...batches.filter(b=>b.status==='fulfilled').flatMap(b=>b.value));
+ eventSearch.rows.sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||'')||a.title.localeCompare(b.title));
+ eventSearch.status=eventSearch.rows.length+' matching events'+(batches.some(b=>b.status==='rejected')?' — some calendars could not be searched.':'')+(googleCalendars.length===0?' — no Google calendars loaded.':'')+'.';
+ show();
+}
+
 function calendar(){
   const x=current('calendar'),d=dateObj(calAnchor),first=calAnchor.slice(0,7)+'-01',start=weekStart(calView==='Month'?first:calAnchor),days=calView==='Month'?Array.from({
     length:Math.ceil((dateObj(first).getDay()+Number(monthEnd(first.slice(0,7)).slice(-2)))/7)*7
@@ -1546,7 +1592,7 @@ function calendar(){
   } else{
     grid=`<div class="week-grid"><div class="week-head"></div>${days.map(day=>`<div class="week-head ${day===easternToday()?'is-today':''}">${dateObj(day).toLocaleDateString('en-CA',{weekday:'short'})}<br><span class="cal-date">${Number(day.slice(-2))}</span></div>`).join('')}${weekBannerHTML(days)}<div class="week-hours">${Array.from({length:24},(_,h)=>`<span class="hour-label" style="top:${h*60}px">${h%12||12} ${h<12?'AM':'PM'}</span>`).join('')}</div>${days.map(day=>`<div class="week-day ${day===easternToday()?'is-today':''}">${layoutWeekEvents(calItems(day).filter(a=>a.time&&!bannerEvent(a))).map(item=>calEvent(item.a,'week-event',item)).join('')}${day===easternToday()?'<div class="now-line"></div>':''}</div>`).join('')}</div>`
   }
-  return card('Schedule',`<div data-render-day="${easternToday()}" class="cal-toolbar"><div class="row"><button class="secondary" data-cal="-1">←</button><button class="secondary" data-cal="today">Today</button><button class="secondary" data-cal="1">→</button><strong>${title}</strong></div><div class="row"><button class="${calView==='Month'?'':'secondary'}" data-cal-view="Month">Month</button><button class="${calView==='Week'?'':'secondary'}" data-cal-view="Week">Week</button></div></div><div class="cal-scroll">${grid}</div><p class="muted">Google Calendar colours · Eastern time (Toronto) · Click a Google event for details.</p>`)+googlePanel()+card(edit?.key==='calendar'?'Edit event':'Add event',form('calendar',field('Event','title',x.title||'','text','required')+field('Date','date',x.date||easternToday(),'date','required')+field('Time','time',x.time||'','time')+field('Location / notes','notes',x.notes||'')))+card('Events',table(['Date','Time','Event','Notes','Actions'],[...state.calendar].sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(timeLabel(a.time)||'—'),esc(a.title),esc(a.notes),controls('calendar',a.id)])))
+  return card('Schedule',`<div data-render-day="${easternToday()}" class="cal-toolbar"><div class="row"><button class="secondary" data-cal="-1">←</button><button class="secondary" data-cal="today">Today</button><button class="secondary" data-cal="1">→</button><strong>${title}</strong></div><div class="row"><button class="${calView==='Month'?'':'secondary'}" data-cal-view="Month">Month</button><button class="${calView==='Week'?'':'secondary'}" data-cal-view="Week">Week</button></div></div><div class="cal-scroll">${grid}</div><p class="muted">Google Calendar colours · Eastern time (Toronto) · Click a Google event for details.</p>`)+googlePanel()+card(edit?.key==='calendar'?'Edit event':'Add event',form('calendar',field('Event','title',x.title||'','text','required')+field('Date','date',x.date||easternToday(),'date','required')+field('Time','time',x.time||'','time')+field('Location / notes','notes',x.notes||'')))+card('Events',table(['Date','Time','Event','Notes','Actions'],[...state.calendar].sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(timeLabel(a.time)||'—'),esc(a.title),esc(a.notes),controls('calendar',a.id)])))+eventSearchCard()
 }
 function vehicle(){
   const x=current('vehicle');
@@ -1656,6 +1702,8 @@ function bind(){
   };
   if(page==='Calendar'){
     clockLine();
+    const sf=$('eventSearchForm');if(sf)sf.onsubmit=e=>{e.preventDefault();runEventSearch(sf);};
+    const sc=$('eventSearchClear');if(sc)sc.onclick=()=>{resetEventSearch();render();};
     const gf=document.getElementById('googleEventForm');if(gf)gf.onsubmit=e=>{e.preventDefault();googleAction('save');};
   }
   root.onchange=e=>{
