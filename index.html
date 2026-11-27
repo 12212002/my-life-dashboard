@@ -1696,7 +1696,7 @@ function vehicle(){
   return card('Maintenance record',form('vehicle',field('Service / repair','title',x.title||'','text','required')+field('Date','date',x.date||today(),'date','required')+number('Odometer (km)','mileage',x.mileage??'',true)+number('Cost (CAD)','amount',x.amount??'')+field('Next service date','next',x.next||'','date')+field('Notes','notes',x.notes||'')))+`<div class="grid">${metric('Latest recorded mileage',state.vehicle.length?Math.max(...state.vehicle.map(a=>a.mileage)).toLocaleString()+' km':'—')}${metric('Total recorded service costs',money(sum(state.vehicle.map(a=>a.amount))))}</div>`+card('Service history',table(['Date','Service','Mileage','Cost','Next service','Notes','Actions'],state.vehicle.map(a=>[esc(a.date),esc(a.title),a.mileage.toLocaleString()+' km',money(a.amount),esc(a.next||'—'),esc(a.notes),controls('vehicle',a.id)])))
 }
 function workspace(){
-  return '<iframe id="workspaceFrame" title="Workspace" src="workspace.html?v=post-note-1" style="width:100%;height:calc(100vh - 130px);min-height:560px;border:0;display:block;background:var(--bg)" allow="clipboard-write"></iframe>';
+  return '<iframe id="workspaceFrame" title="Workspace" src="workspace.html?v=note-actions-1" style="width:100%;height:calc(100vh - 130px);min-height:560px;border:0;display:block;background:var(--bg)" allow="clipboard-write"></iframe>';
 }
 window.dashboardWorkspace={
   read(sender){
