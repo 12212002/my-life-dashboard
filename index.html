@@ -985,6 +985,7 @@ function totals(m,end=monthEnd(m)){
 
 let homeAgendaRows=[],homeAgendaStatus='',homeAgendaDay='',homeAgendaSeq=0,homeAgendaLoading=false;
 function resetHomeAgenda(){homeAgendaRows=[];homeAgendaStatus='';homeAgendaDay='';homeAgendaSeq++;homeAgendaLoading=false;}
+function homeDateHeader(from=easternToday()){const first=from.slice(0,4),last=shiftDay(from,6).slice(0,4);return 'Date - '+(first===last?first:first.slice(-2)+' - '+last);}
 function homeDateLabel(s){return new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric'}).format(dateObj(s));}
 function homeUpcoming(from=easternToday()){
  const to=shiftDay(from,7);
@@ -992,9 +993,9 @@ function homeUpcoming(from=easternToday()){
 }
 function homeAgendaHTML(upcoming){
  const message=homeAgendaLoading?'Loading Google Calendar events…':homeAgendaStatus||(!googleToken?'Connect Google Calendar to see your upcoming Google events.':'Next 7 days, including today.');
- return '<p class="muted">'+esc(message)+'</p>'+(!googleToken?'<button type="button" class="secondary" data-go="Calendar">Open Calendar</button>':'')+table(['Date - '+easternToday().slice(0,4),'Time','Item'],upcoming.map(a=>{
+ return '<p class="muted">'+esc(message)+'</p>'+(!googleToken?'<button type="button" class="secondary" data-go="Calendar">Open Calendar</button>':'')+table([homeDateHeader(),'Time','Item'],upcoming.map(a=>{
  const last=a.endDate&&a.endDate!==a.date?a.endDate:'';
- return [esc(homeDateLabel(a.date)+(a.date.slice(0,4)!==easternToday().slice(0,4)?' ('+a.date.slice(0,4)+')':'')+(last?' – '+homeDateLabel(last)+(last.slice(0,4)!==easternToday().slice(0,4)?' ('+last.slice(0,4)+')':''):'')),esc(a.all?'All day':timeLabel(a.time)+(a.endTime?' – '+timeLabel(a.endTime):'')),esc(a.title)];
+ return [esc(homeDateLabel(a.date)+(last?' – '+homeDateLabel(last):'')),esc(a.all?'All day':timeLabel(a.time)+(a.endTime?' – '+timeLabel(a.endTime):'')),esc(a.title)];
  }));
 }
 async function refreshHomeAgenda(){
