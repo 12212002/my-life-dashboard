@@ -882,6 +882,12 @@ function migrateUniversity(){
 }
 migrateUniversity();
 const sections=[['Home','⌂','Your daily overview'],['University','🎓','Grades, exams & assignments'],['Work','▤','Tasks & follow-ups'],['Calendar','▦','Schedule & deadlines'],['Finances','$','Income, expenses & projections'],['Vehicle','🚘','Maintenance & mileage'],['Workspace','▧','Notes, links & custom tools'],['Settings','⚙','Preferences & appearance']];
+function cloudCanonical(value){
+ if(Array.isArray(value))return value.map(cloudCanonical);
+ if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().map(k=>[k,cloudCanonical(value[k])]));
+ return value;
+}
+function cloudStateKey(value){return JSON.stringify(cloudCanonical(value));}
 function save(){
   if(!cloudReady || !cloudSave){notify('Cloud not connected. Changes are not saved.');return;}
   cloudSave(JSON.parse(JSON.stringify(state)));
@@ -1666,7 +1672,7 @@ function vehicle(){
   return card('Maintenance record',form('vehicle',field('Service / repair','title',x.title||'','text','required')+field('Date','date',x.date||today(),'date','required')+number('Odometer (km)','mileage',x.mileage??'',true)+number('Cost (CAD)','amount',x.amount??'')+field('Next service date','next',x.next||'','date')+field('Notes','notes',x.notes||'')))+`<div class="grid">${metric('Latest recorded mileage',state.vehicle.length?Math.max(...state.vehicle.map(a=>a.mileage)).toLocaleString()+' km':'—')}${metric('Total recorded service costs',money(sum(state.vehicle.map(a=>a.amount))))}</div>`+card('Service history',table(['Date','Service','Mileage','Cost','Next service','Notes','Actions'],state.vehicle.map(a=>[esc(a.date),esc(a.title),a.mileage.toLocaleString()+' km',money(a.amount),esc(a.next||'—'),esc(a.notes),controls('vehicle',a.id)])))
 }
 function workspace(){
-  return '<iframe id="workspaceFrame" title="Workspace" src="workspace.html?v=linked-values-3" style="width:100%;height:calc(100vh - 130px);min-height:560px;border:0;display:block;background:var(--bg)" allow="clipboard-write"></iframe>';
+  return '<iframe id="workspaceFrame" title="Workspace" src="workspace.html?v=active-tab-1" style="width:100%;height:calc(100vh - 130px);min-height:560px;border:0;display:block;background:var(--bg)" allow="clipboard-write"></iframe>';
 }
 window.dashboardWorkspace={
   read(sender){
@@ -1675,7 +1681,7 @@ window.dashboardWorkspace={
       {id:'legacy-links',type:'links',label:'Quick Links',links:state.links.map(l=>({title:l.title,url:l.url,category:l.category||'General'})),pos:{x:0,y:0,w:6,h:18}},
       {id:'legacy-notes',type:'knowledge',label:'Knowledge Base',notes:state.knowledge.map(n=>({title:n.title,category:n.category||'General',text:n.notes||''})),pos:{x:6,y:0,w:6,h:18}}
     ]}];
-    return JSON.parse(JSON.stringify({storage:state.workspace||{},pages,dark:state.theme==='dark'}));
+    return JSON.parse(JSON.stringify({storage:state.workspace||{},pages,dark:state.theme==='dark',owner:googleOwner}));
   },
   write(sender,key,value){
     if(!cloudReady||page!=='Workspace'||$('workspaceFrame')?.contentWindow!==sender)throw Error('Workspace is no longer connected. Reopen it to continue.');
@@ -2036,14 +2042,14 @@ try{
         await setDoc(ref,{state:defaults()});
         if(session!==generation)return;
       }
-      lastRemote=JSON.stringify(state);
+      lastRemote=cloudStateKey(state);
       migrateUniversity();page='Home';pending=0;failed=false;queue=Promise.resolve();
       cloudReady=true;
       cloudSave=data=>{
         pending++;status.textContent='Saving to cloud…';
         queue=queue.catch(()=>{}).then(async()=>{
           if(session!==generation)return;
-          try{await setDoc(ref,{state:data});if(session===generation){failed=false;lastRemote=JSON.stringify(data);}}
+          try{await setDoc(ref,{state:data});if(session===generation){failed=false;lastRemote=cloudStateKey(data);}}
           catch(e){if(session===generation){failed=true;notify('Cloud save failed. Export a backup in Settings.');}}
           finally{if(session===generation){pending--;status.textContent=failed?'Save failed — export backup':pending?'Saving to cloud…':'Saved to cloud';}}
         });
@@ -2057,8 +2063,8 @@ try{
       unsubscribe=onSnapshot(ref,{includeMetadataChanges:true},snap=>{
         if(session!==generation||!snap.exists()||snap.metadata.hasPendingWrites||snap.metadata.fromCache||pending||failed)return;
         const remote=snap.data().state;if(!remote||typeof remote!=='object')return;
-        const json=JSON.stringify(remote);if(json===lastRemote)return;
-        lastRemote=json;state={...defaults(),...remote};migrateUniversity();edit=null;render();status.textContent='Synced from cloud';
+        const json=cloudStateKey(remote);if(json===lastRemote||json===cloudStateKey(state)){lastRemote=json;return;}
+        const keepWorkspace=page==='Workspace'&&!!$('workspaceFrame')&&cloudStateKey(state.workspace||{})===cloudStateKey(remote.workspace||{})&&state.theme===(remote.theme??defaults().theme)&&cloudStateKey(state.links||[])===cloudStateKey(remote.links||[])&&cloudStateKey(state.knowledge||[])===cloudStateKey(remote.knowledge||[]);lastRemote=json;state={...defaults(),...remote};migrateUniversity();if(!keepWorkspace){edit=null;render();}status.textContent='Synced from cloud';
       },e=>{if(session===generation)status.textContent='Live sync unavailable: '+e.code;});
     }catch(e){
       if(session!==generation)return;
