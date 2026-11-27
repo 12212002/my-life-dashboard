@@ -799,6 +799,20 @@ body.dark .cal-scroll{--calendar-grid:#3c4043;--calendar-bg:#202124;--calendar-t
 .cal-scroll .month-week .month-span{height:19px;line-height:15px;font-size:11px;margin:1px 3px;padding:2px 5px;z-index:2;width:auto;min-width:0}
 .cal-scroll .month-week .month-span.continues-before{padding-left:11px}
 .cal-scroll .month-week .month-span.continues-after{padding-right:11px}
+
+.home-agenda-meta{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:13px;margin:0 0 12px}
+.home-agenda-day{display:grid;grid-template-columns:80px minmax(0,1fr);gap:20px;padding:18px 0;border-bottom:1px solid var(--line)}
+.home-agenda-day:last-child{border-bottom:0;padding-bottom:4px}
+.home-agenda-date{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:12px;text-align:center}
+.home-agenda-date strong{font-size:30px;line-height:1.2;color:var(--text);font-weight:650}
+.home-agenda-date.agenda-today strong{color:var(--accent)}
+.home-agenda-date small{font-size:11px}
+.home-agenda-events{display:grid;gap:14px;min-width:0}
+.home-agenda-event{display:grid;grid-template-columns:4px minmax(0,1fr);gap:10px;align-items:stretch}
+.home-agenda-stripe{border-radius:4px;min-height:34px;box-shadow:inset 0 0 0 1px #80808033}
+.home-agenda-title{font-size:14px;font-weight:600;overflow-wrap:anywhere;line-height:1.45}
+.home-agenda-time{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
+@media(max-width:480px){.home-agenda-day{grid-template-columns:62px minmax(0,1fr);gap:12px}}
 </style>
 </head>
 <body>
@@ -991,12 +1005,27 @@ function homeUpcoming(from=easternToday()){
  const to=shiftDay(from,7);
  return [...homeAgendaRows.filter(a=>googleVisible.has(a.calendarId)),...state.calendar.map(a=>({...a,all:!a.time,endDate:a.date}))].filter(a=>a.date&&a.date<to&&((a.endDate||a.date)>from||((a.endDate||a.date)===from&&(a.all||a.endTime!=='00:00'||a.date===from)))).sort((a,b)=>(a.date<from?from:a.date).localeCompare(b.date<from?from:b.date)||(a.time||'').localeCompare(b.time||'')||a.title.localeCompare(b.title));
 }
+function homeAgendaGroups(upcoming,from=easternToday()){
+ const groups=new Map();
+ for(const a of upcoming){const day=a.date<from?from:a.date;if(!groups.has(day))groups.set(day,[]);groups.get(day).push(a);}
+ return [...groups.entries()];
+}
+function homeAgendaTime(a){
+ const span=a.endDate&&a.endDate!==a.date?' · '+homeDateLabel(a.date)+' – '+homeDateLabel(a.endDate):'';
+ if(a.all)return 'All day'+span;
+ const fmt=t=>{const [h,m]=t.split(':').map(Number);return {clock:(h%12||12)+':'+String(m).padStart(2,'0'),period:h%24<12?'AM':'PM'};};
+ if(!a.time)return 'All day'+span;
+ const s=fmt(a.time),e=a.endTime?fmt(a.endTime):null;
+ return (e?s.clock+(s.period!==e.period?' '+s.period:'')+' – '+e.clock+' '+e.period:s.clock+' '+s.period)+span;
+}
 function homeAgendaHTML(upcoming){
  const message=homeAgendaLoading?'Loading Google Calendar events…':homeAgendaStatus||(!googleToken?'Connect Google Calendar to see your upcoming Google events.':'Next 7 days, including today.');
- return '<p class="muted">'+esc(message)+'</p>'+(!googleToken?'<button type="button" class="secondary" data-go="Calendar">Open Calendar</button>':'')+table([homeDateHeader(),'Time','Item'],upcoming.map(a=>{
- const last=a.endDate&&a.endDate!==a.date?a.endDate:'';
- return [esc(homeDateLabel(a.date)+(last?' – '+homeDateLabel(last):'')),esc(a.all?'All day':timeLabel(a.time)+(a.endTime?' – '+timeLabel(a.endTime):'')),esc(a.title)];
- }));
+ const from=easternToday(),groups=homeAgendaGroups(upcoming,from);
+ const year=homeDateHeader(from).replace(/^Date - /,'');
+ return '<div class="home-agenda-meta"><span class="muted">'+esc(message)+'</span><span class="muted"> '+esc(year)+'</span></div>'+(!googleToken?'<button type="button" class="secondary" data-go="Calendar">Open Calendar</button>':'')+(groups.length?'<div class="home-agenda">'+groups.map(([day,events])=>{
+ const d=dateObj(day),month=d.toLocaleDateString('en-US',{month:'short'}).toUpperCase(),weekday=d.toLocaleDateString('en-US',{weekday:'long'});
+ return '<div class="home-agenda-day"><div class="home-agenda-date '+(day===from?'agenda-today':'')+'"><span>'+esc(month)+'</span><strong>'+Number(day.slice(-2))+'</strong><small>'+esc(weekday)+'</small></div><div class="home-agenda-events">'+events.map(a=>'<div class="home-agenda-event"><span class="home-agenda-stripe" style="background:'+calendarEventColor(a)+'"></span><div><div class="home-agenda-title">'+esc(a.title)+'</div><div class="home-agenda-time">'+esc(homeAgendaTime(a))+'</div></div></div>').join('')+'</div></div>';
+ }).join('')+'</div>':'<div class="empty">'+(homeAgendaLoading?'Loading…':'No calendar events in the next 7 days.')+'</div>');
 }
 async function refreshHomeAgenda(){
  if(!cloudReady||!googleToken||homeAgendaLoading)return;
@@ -1004,7 +1033,13 @@ async function refreshHomeAgenda(){
  homeAgendaLoading=true;homeAgendaDay=from;if(page==='Home')render();
  try{
  const params={timeMin:easternInstant(from+'T00:00'),timeMax:easternInstant(to+'T00:00'),singleEvents:'true',orderBy:'startTime',maxResults:'250',timeZone:calendarZone};
- const batches=await Promise.allSettled(googleCalendars.map(async cal=>(await googleList('calendars/'+encodeURIComponent(cal.id)+'/events',params)).filter(e=>e.status!=='cancelled'&&e.start).map(e=>({...searchGoogleRow(e,cal),calendarId:cal.id}))));
+ const palette=await googleRequest('colors').catch(()=>null);
+ const batches=await Promise.allSettled(googleCalendars.map(async cal=>{
+ const path='calendars/'+encodeURIComponent(cal.id);
+ const [legacy,modern,metadata]=await Promise.all([googleList(path+'/events',params),googleList(path+'/events',{...params,eventLabelVersion:'1'}).catch(()=>null),googleRequest(path).catch(()=>null)]);
+ const labels=new Map((metadata?.labelProperties?.eventLabels||[]).map(x=>[x.id,x.backgroundColor])),byId=new Map(legacy.map(e=>[e.id,e]));
+ return (modern||legacy).filter(e=>e.status!=='cancelled'&&e.start).map(e=>({...searchGoogleRow(e,cal),calendarId:cal.id,color:cal.backgroundColor||palette?.calendar?.[cal.colorId]?.background,eventColor:labels.get(e.eventLabelId)||palette?.event?.[byId.get(e.id)?.colorId||e.colorId]?.background}));
+ }));
  if(seq!==homeAgendaSeq||session!==googleSession||!cloudReady)return;
  homeAgendaRows=batches.filter(b=>b.status==='fulfilled').flatMap(b=>b.value);
  homeAgendaStatus=batches.some(b=>b.status==='rejected')?'Some Google calendars could not be loaded. Showing available events for the next 7 days.':'Next 7 days, including today.';
