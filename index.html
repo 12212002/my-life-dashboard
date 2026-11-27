@@ -1082,10 +1082,10 @@ function upcomingPaymentsCard(m){
   const label=dateObj(m+'-01').toLocaleDateString('en-CA',{month:'long',year:'numeric'});
   return card('Upcoming payments', '<p class="muted">Scheduled expenses remaining in '+esc(label)+'. Payments are deducted automatically on their due dates.</p>'+metric('Total remaining payments',money(sum(rows.map(t=>t.amount))),'red')+(rows.length?table(['Payment date','Description','Amount','Repeat'],rows.map(t=>[esc(t.date),esc(t.title),'<span class="red">'+money(t.amount)+'</span>',esc(t.repeat)])):'<p class="muted">No upcoming payments in this month.</p>'));
 }
-function financeDescriptionSettings(category){return category==='Gas'?{label:'Gas Price (optional)',inputmode:'decimal'}:{label:'Description (optional)',inputmode:'text'};}
+function financeDescriptionSettings(category){return category==='Gas'?{label:'Gas Price (¢/L, optional)',inputmode:'decimal'}:{label:'Description (optional)',inputmode:'text'};}
 function financeDescriptionField(x){
  const gas=x.category==='Gas',config=financeDescriptionSettings(x.category);
- return field(config.label,'title',gas&&x.title==='Gas'?'':x.title||'','text',gas?'inputmode="decimal" autocomplete="off"':'');
+ return field(config.label,'title',gas&&x.title==='Gas'?'':x.title||'','text',gas?'inputmode="decimal" autocomplete="off" placeholder="145.9"':'');
 }
 function updateFinanceDescription(form){
  const category=form.elements.namedItem('category'),input=form.elements.namedItem('title');
@@ -1093,8 +1093,8 @@ function updateFinanceDescription(form){
  const config=financeDescriptionSettings(category.value);
  const label=input.closest('label');
  if(label?.firstChild?.nodeType===3)label.firstChild.textContent=config.label;
- if(config.inputmode==='decimal'){input.setAttribute('inputmode','decimal');input.setAttribute('autocomplete','off');}
- else{input.removeAttribute('inputmode');input.removeAttribute('autocomplete');}
+ if(config.inputmode==='decimal'){input.setAttribute('inputmode','decimal');input.setAttribute('autocomplete','off');input.setAttribute('placeholder','145.9');}
+ else{input.removeAttribute('inputmode');input.removeAttribute('autocomplete');input.removeAttribute('placeholder');}
 }
 function finance(){
   const x=current('transactions'), t=totals(month), actual=totals(today().slice(0,7),today()), now=balance(today()), net=t.income-t.expense;
