@@ -1119,15 +1119,20 @@ function spendingBudgetValues(monthly,day,period,entries){
  return {configured,limit,spent,percent,remaining:limit-spent,days};
 }
 function spendingBudgetHTML(){
- const day=today(),p=spendingPeriod,v=spendingBudgetValues(state.monthlySpendingBudget,day,p,occurrences(day));
- const dateLabel=p==='Day'?'Today':p==='Year'?day.slice(0,4):dateObj(day).toLocaleDateString('en-CA',{month:'long',year:'numeric'});
+ const day=easternToday(),p=spendingPeriod,v=spendingBudgetValues(state.monthlySpendingBudget,day,p,occurrences(day));
+ const asOf=dateObj(day).toLocaleDateString('en-CA',{month:'short',day:'numeric'});const dateLabel=(p==='Day'?'Today':p==='Year'?day.slice(0,4):dateObj(day).toLocaleDateString('en-CA',{month:'long',year:'numeric'}))+' · through '+asOf;
  const controls='<div class="spending-period" role="group" aria-label="Spending budget period">'+['Day','Month','Year'].map(k=>'<button type="button" data-spending-period="'+k+'" aria-pressed="'+(p===k)+'" class="'+(p===k?'active':'secondary')+'">'+k+'</button>').join('')+'</div>';
  const color=v.percent>=100?'#dc3545':v.percent>=80?'#e6a023':'#4263eb';
  return '<div class="row spending-budget-head"><h2>Spending Budget</h2>'+controls+'</div><div class="row spending-budget-amount"><div><strong>'+money(v.spent)+'</strong><span class="muted"> / '+(v.configured?money(v.limit):'Not set')+'</span></div><strong>'+(v.configured?v.percent.toFixed(1)+'%':'—')+'</strong></div><div class="spending-budget-track" role="progressbar" aria-label="Budget spent" aria-valuemin="0" aria-valuemax="100" '+(v.configured?'aria-valuenow="'+Math.min(100,Math.max(0,v.percent)).toFixed(1)+'"':'')+'><div style="width:'+Math.min(100,Math.max(0,v.percent))+'%;background:'+color+'"></div></div><div class="row spending-budget-foot"><span class="muted">'+esc(dateLabel)+'</span>'+(v.configured?'<span class="'+(v.remaining<0?'red':'green')+'">'+money(Math.abs(v.remaining))+(v.remaining<0?' over budget':' remaining')+'</span>':'<button type="button" class="secondary" data-go="Settings">Set monthly budget</button>')+'</div>';
 }
-function spendingBudgetCard(){return '<section class="card" id="spendingBudgetCard">'+spendingBudgetHTML()+'</section>';}
+function spendingBudgetCard(){return '<section class="card" id="spendingBudgetCard" data-as-of="'+easternToday()+'">'+spendingBudgetHTML()+'</section>';}
+function refreshSpendingBudgetDate(){
+ if(!cloudReady||page!=='Finances')return;
+ const panel=$('spendingBudgetCard'),day=easternToday();
+ if(panel&&panel.dataset.asOf!==day){panel.innerHTML=spendingBudgetHTML();panel.dataset.asOf=day;}
+}
 function spendingSettingsPreview(value){
- const d=today(),daily=spendingBudgetValues(value,d,'Day',[]),yearly=spendingBudgetValues(value,d,'Year',[]);
+ const d=easternToday(),daily=spendingBudgetValues(value,d,'Day',[]),yearly=spendingBudgetValues(value,d,'Year',[]);
  return daily.configured?'Daily: '+money(daily.limit)+' ('+daily.days+' days this month) · Yearly: '+money(yearly.limit):'Enter a monthly budget to calculate daily and yearly limits.';
 }
 function finance(){
@@ -2055,7 +2060,9 @@ function bind(){
     }
   }
 }
-setInterval(()=>{if(cloudReady && page==='Calendar')clockLine();if(cloudReady&&page==='Home'&&googleToken&&homeAgendaDay!==easternToday())refreshHomeAgenda();},15000);
+window.addEventListener('focus',refreshSpendingBudgetDate);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshSpendingBudgetDate();});
+setInterval(()=>{refreshSpendingBudgetDate();if(cloudReady && page==='Calendar')clockLine();if(cloudReady&&page==='Home'&&googleToken&&homeAgendaDay!==easternToday())refreshHomeAgenda();},15000);
 </script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script type="module">
