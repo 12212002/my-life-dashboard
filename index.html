@@ -880,6 +880,8 @@ body:not(.authenticated)>aside,body:not(.authenticated)>main{display:none}
 
 /* MyLife icon family: matching flat logo palette and fixed navigation alignment. */
 #nav button{display:flex;align-items:center;gap:12px;text-align:left;min-height:44px}#nav .section-icon{width:22px;height:22px;flex:0 0 22px;display:block}#nav .nav-label{min-width:0;line-height:1.3}.tile .section-icon{width:30px;height:30px;display:block}#authGate .login-feature .section-icon{width:25px;height:25px;display:block;flex:none}@media(max-width:760px){#nav button{gap:7px}#nav .section-icon{width:20px;height:20px;flex-basis:20px}}
+
+#nav .nav-mono-icon{width:18px;height:18px;flex:0 0 18px;display:block;color:inherit}#nav button{gap:12px}#nav .nav-label{color:inherit}@media(max-width:760px){#nav button{gap:7px}#nav .nav-mono-icon{width:17px;height:17px;flex-basis:17px}}
 </style>
 <div id="authGate"><div class="login-shell">
 <div class="login-brand"><img src="./mylife-sidebar.svg?v=3" alt="" width="43" height="28"><span>MyLife - Dashboard</span></div>
@@ -975,13 +977,14 @@ function go(p){
   if(p==='Home'&&!googleRestoring){if(googleToken)refreshHomeAgenda();else googleRestore();}
   if(p==='Calendar'&&!googleRestoring){if(googleToken)googleRefresh();else googleRestore();}
 }
+const navMonoIcons={"Home":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m3 10 9-7 9 7M5 9v11h14V9M9 20v-7h6v7\"/></svg>","University":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m2 9 10-5 10 5-10 5-10-5ZM6 11v6c3 3 9 3 12 0v-6M22 9v6\"/></svg>","Work":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"7\" width=\"18\" height=\"14\" rx=\"2\"/><path d=\"M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18M10 13v2h4v-2\"/></svg>","Calendar":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"2\"/><path d=\"M16 3v4M8 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01\"/></svg>","Finances":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"9\" cy=\"9\" r=\"6\"/><path d=\"M9 6v6M15.5 9.5a6 6 0 1 1-6 6M16 14v5\"/></svg>","Vehicle":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m5 11 2-6h10l2 6M3 15v-2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2M3 15h18v4H3zM5 19v2M19 19v2M7 15h.01M17 15h.01\"/></svg>","Workspace":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"4\" y=\"4\" width=\"16\" height=\"13\" rx=\"2\"/><path d=\"m4 17-2 3h20l-2-3\"/></svg>","Settings":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m10 3 4 0 .7 2.5 2 .9 2.3-1.2 2 3.5-1.9 1.7v3.2l1.9 1.7-2 3.5-2.3-1.2-2 .9L14 21h-4l-.7-2.5-2-.9L5 18.8l-2-3.5 1.9-1.7v-3.2L3 8.7l2-3.5 2.3 1.2 2-.9L10 3Z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>"};
 function render(){
   document.body.classList.toggle('dark',state.theme==='dark');
   $('heading').textContent=page==='Home'?'Overview':page;
   $('today').textContent=new Date().toLocaleDateString('en-CA',{
     weekday:'long',month:'long',day:'numeric',year:'numeric'
   });
-  $('nav').innerHTML=sections.map(([n,i])=>`<button data-page="${esc(n)}" class="${page===n?'active':''}">${i}<span class="nav-label">${esc(n)}</span></button>`).join('');
+  $('nav').innerHTML=sections.map(([n,i])=>`<button data-page="${esc(n)}" class="${page===n?'active':''}">${navMonoIcons[n]}<span class="nav-label">${esc(n)}</span></button>`).join('');
   $('nav').querySelectorAll('button').forEach(b=>b.onclick=()=>go(b.dataset.page));
   $('content').innerHTML=(!storageOK?'<p class="notice">Browser storage is unavailable. Export a backup before closing.</p>':'')+({
     Home:home,Finances:finance,University:university,Work:work,Calendar:calendar,Vehicle:vehicle,Workspace:workspace,Settings:settings
