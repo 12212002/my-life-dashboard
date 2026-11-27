@@ -1756,9 +1756,10 @@ function calendar(){
   }
   return card('Schedule',`<div data-render-day="${easternToday()}" class="cal-toolbar"><div class="row"><button class="secondary" data-cal="-1">←</button><button class="secondary" data-cal="today">Today</button><button class="secondary" data-cal="1">→</button><strong>${title}</strong></div><div class="row"><button class="${calView==='Month'?'':'secondary'}" data-cal-view="Month">Month</button><button class="${calView==='Week'?'':'secondary'}" data-cal-view="Week">Week</button></div></div><div class="cal-scroll">${grid}</div><p class="muted">Google Calendar colours · Eastern time (Toronto) · Click a Google event for details.</p>`)+googlePanel()+card(edit?.key==='calendar'?'Edit event':'Add event',form('calendar',field('Event','title',x.title||'','text','required')+field('Date','date',x.date||easternToday(),'date','required')+field('Time','time',x.time||'','time')+field('Location / notes','notes',x.notes||'')))+card('Events',table(['Date','Time','Event','Notes','Actions'],[...state.calendar].sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(timeLabel(a.time)||'—'),esc(a.title),esc(a.notes),controls('calendar',a.id)])))+eventSearchCard()
 }
+function latestVehicleMileage(rows){const values=rows.map(a=>a.mileage).filter(n=>Number.isFinite(n));return values.length?Math.max(...values).toLocaleString()+' km':'—';}
 function vehicle(){
   const x=current('vehicle');
-  return card('Maintenance record',form('vehicle',field('Service / repair','title',x.title||'','text','required')+field('Date','date',x.date||today(),'date','required')+number('Odometer (km)','mileage',x.mileage??'',true)+number('Cost (CAD)','amount',x.amount??'')+field('Next service date','next',x.next||'','date')+field('Notes','notes',x.notes||'')))+`<div class="grid">${metric('Latest recorded mileage',state.vehicle.length?Math.max(...state.vehicle.map(a=>a.mileage)).toLocaleString()+' km':'—')}${metric('Total recorded service costs',money(sum(state.vehicle.map(a=>a.amount))))}</div>`+card('Service history',table(['Date','Service','Mileage','Cost','Next service','Notes','Actions'],state.vehicle.map(a=>[esc(a.date),esc(a.title),a.mileage.toLocaleString()+' km',money(a.amount),esc(a.next||'—'),esc(a.notes),controls('vehicle',a.id)])))
+  return card('Maintenance record',form('vehicle',field('Service / repair','title',x.title||'','text','required')+field('Date','date',x.date||today(),'date','required')+field('Odometer (km, optional)','mileage',x.mileage??'','text','inputmode="numeric" autocomplete="off"')+number('Cost (CAD)','amount',x.amount??'')+field('Next service date','next',x.next||'','date')+field('Notes','notes',x.notes||'')))+`<div class="grid">${metric('Latest recorded mileage',latestVehicleMileage(state.vehicle))}${metric('Total recorded service costs',money(sum(state.vehicle.map(a=>a.amount))))}</div>`+card('Service history',table(['Date','Service','Mileage','Cost','Next service','Notes','Actions'],state.vehicle.map(a=>[esc(a.date),esc(a.title),Number.isFinite(a.mileage)?a.mileage.toLocaleString()+' km':'—',money(a.amount),esc(a.next||'—'),esc(a.notes),controls('vehicle',a.id)])))
 }
 function workspace(){
   return '<iframe id="workspaceFrame" title="Workspace" src="workspace.html?v=action-buttons-1" style="width:100%;height:calc(100vh - 130px);min-height:560px;border:0;display:block;background:var(--bg)" allow="clipboard-write"></iframe>';
@@ -1988,11 +1989,11 @@ function bind(){
         }
         if(key==='transactions')a.category=financeCategory(a.type,a.category);
         if(key==='transactions'&&!a.title.trim())a.title=a.category==='Other'?a.type:a.category;
-        for(const k of ['amount','mileage','weight','grade'])if(k in a)a[k]=k==='grade'&&a[k].trim()===''?null:parseAmount(a[k]);
+        for(const k of ['amount','mileage','weight','grade'])if(k in a)a[k]=(k==='grade'||k==='mileage')&&a[k].trim()===''?null:parseAmount(a[k]);
         if(key==='transactions'&&(a.amount<=0||a.end&&a.end<a.date))throw Error('Enter a positive amount and an end date on or after the start date.');
         if(key==='university'&&(a.weight<0||a.weight>100||a.grade!==null&&(a.grade<0||a.grade>100)))throw Error('Grades and weights must be between 0 and 100.');
         if(key==='university'&&sum(state.university.filter(x=>x.courseId===a.courseId&&x.id!==edit?.id).map(x=>x.weight))+a.weight+Number(state.courses.find(c=>c.id===a.courseId)?.finalWeight??0)>100.00001)throw Error('Assessment weights plus final exam weight cannot exceed 100%. Enter the final exam separately in course settings.');
-        if(key==='vehicle'&&(!Number.isInteger(a.mileage)||a.mileage<0||a.amount<0))throw Error('Enter a whole nonnegative mileage and valid cost.');
+        if(key==='vehicle'&&(a.mileage!==null&&(!Number.isInteger(a.mileage)||a.mileage<0)||a.amount<0))throw Error('Enter a whole nonnegative mileage and valid cost.');
         if(key==='links'&&!safeURL(a.url))throw Error('Enter an HTTP or HTTPS website URL.');
         if(edit?.key===key){
           a.id=edit.id;
