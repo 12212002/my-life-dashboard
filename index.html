@@ -813,6 +813,17 @@ body.dark .cal-scroll{--calendar-grid:#3c4043;--calendar-bg:#202124;--calendar-t
 .home-agenda-title{font-size:14px;font-weight:600;overflow-wrap:anywhere;line-height:1.45}
 .home-agenda-time{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
 @media(max-width:480px){.home-agenda-day{grid-template-columns:62px minmax(0,1fr);gap:12px}}
+
+/* Consistent Edit / Delete action buttons */
+button.action-edit,button.action-delete{display:inline-flex;align-items:center;justify-content:center;gap:5px;vertical-align:middle;white-space:nowrap;border-radius:999px!important;padding:5px 12px!important;font-size:13px!important;font-weight:500!important;line-height:1.2;background:transparent!important;box-shadow:none!important;min-height:28px;margin-top:0}
+button.action-edit{color:#595959!important;border:1px solid #d6d6d6!important}
+button.action-delete{color:#ff3030!important;border:1px solid #ff3030!important}
+body.dark button.action-edit{color:#d5dbe5!important;border-color:#647084!important}
+body.dark button.action-delete{color:#ff8993!important;border-color:#ff8993!important}
+button.action-edit::before,button.action-delete::before{content:'';display:inline-block;flex:0 0 15px;width:15px;height:15px;background:currentColor;mask-repeat:no-repeat;mask-position:center;mask-size:contain;-webkit-mask-repeat:no-repeat;-webkit-mask-position:center;-webkit-mask-size:contain}
+button.action-edit::before{mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M15%205l4%204M4%2020l4-1%2012-12a2.8%202.8%200%200%200-4-4L4%2015z'%2F%3E%3C%2Fsvg%3E");-webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M15%205l4%204M4%2020l4-1%2012-12a2.8%202.8%200%200%200-4-4L4%2015z'%2F%3E%3C%2Fsvg%3E")}
+button.action-delete::before{mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M3%206h18M8%206V3h8v3M5%206l1%2014h12l1-14M10%2010v6M14%2010v6'%2F%3E%3C%2Fsvg%3E");-webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M3%206h18M8%206V3h8v3M5%206l1%2014h12l1-14M10%2010v6M14%2010v6'%2F%3E%3C%2Fsvg%3E")}
+button.action-edit:hover{background:rgba(128,128,128,.09)!important}button.action-delete:hover{background:rgba(255,48,48,.08)!important}button.action-edit:focus-visible,button.action-delete:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
 <link rel="icon" type="image/png" href="./favicon.png">
 <link rel="apple-touch-icon" href="./favicon.png">
@@ -947,7 +958,7 @@ function current(key){
   }
 }
 function controls(key,id){
-  return `<button class="secondary" data-edit="${key}:${id}">Edit</button><button class="danger" data-delete="${key}:${id}">Delete</button>`
+  return `<button class="action-edit secondary" data-edit="${key}:${id}">Edit</button><button class="action-delete danger" data-delete="${key}:${id}">Delete</button>`
 }
 function table(headers,rows){
   return rows.length?`<div class="tablewrap"><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nothing added yet.</div>'
@@ -1696,7 +1707,7 @@ function vehicle(){
   return card('Maintenance record',form('vehicle',field('Service / repair','title',x.title||'','text','required')+field('Date','date',x.date||today(),'date','required')+number('Odometer (km)','mileage',x.mileage??'',true)+number('Cost (CAD)','amount',x.amount??'')+field('Next service date','next',x.next||'','date')+field('Notes','notes',x.notes||'')))+`<div class="grid">${metric('Latest recorded mileage',state.vehicle.length?Math.max(...state.vehicle.map(a=>a.mileage)).toLocaleString()+' km':'—')}${metric('Total recorded service costs',money(sum(state.vehicle.map(a=>a.amount))))}</div>`+card('Service history',table(['Date','Service','Mileage','Cost','Next service','Notes','Actions'],state.vehicle.map(a=>[esc(a.date),esc(a.title),a.mileage.toLocaleString()+' km',money(a.amount),esc(a.next||'—'),esc(a.notes),controls('vehicle',a.id)])))
 }
 function workspace(){
-  return '<iframe id="workspaceFrame" title="Workspace" src="workspace.html?v=note-actions-1" style="width:100%;height:calc(100vh - 130px);min-height:560px;border:0;display:block;background:var(--bg)" allow="clipboard-write"></iframe>';
+  return '<iframe id="workspaceFrame" title="Workspace" src="workspace.html?v=action-buttons-1" style="width:100%;height:calc(100vh - 130px);min-height:560px;border:0;display:block;background:var(--bg)" allow="clipboard-write"></iframe>';
 }
 window.dashboardWorkspace={
   read(sender){
@@ -1741,7 +1752,7 @@ function links(){
   return card('Add bookmark',form('links',field('Name','title',x.title||'','text','required')+field('Website URL','url',x.url||'','url','required')+field('Category','category',x.category||'General')))+card('Your links',`<div class="filterbar">${field('Search links','linkQuery',linkQuery,'search')}${select('Category','linkCategory',['All',...new Set(state.links.map(a=>a.category).filter(Boolean))],linkCategory)}<button class="secondary" data-clear-links>Clear filters</button></div><div id="linkRows">${linkRows()}</div>`)
 }
 function settings(){
-  return card('Preferences',`<form id="settingsForm"><div class="formgrid">${number('Opening balance (CAD)','opening',state.opening,false,true)}${number('Savings target (%)','budget',state.budget)}${select('Appearance','theme',['light','dark'],state.theme)}</div><p class="muted">Opening balance means your balance immediately before the earliest transaction you enter. All transactions dated on or before today are added to or deducted from this balance automatically; future entries are included only in forecasts.</p><button>Save preferences</button></form>`)+card('Data and backups',`<p>Your data is saved in this browser only. Export backups before moving to a new device or clearing browser data.</p><div class="actions"><button id="export">Export JSON backup</button><button class="secondary" id="csv">Export finance CSV</button><button class="secondary" id="import">Import JSON backup</button><button class="danger" id="reset">Delete all data</button></div><input id="importFile" type="file" accept="application/json,.json" hidden style="display:none">`)+card('About this prototype','<p>Single-file local HTML application. No login, Firebase, external APIs or network requests. Data does not sync between devices. Local file storage behavior varies by browser.</p>')
+  return card('Preferences',`<form id="settingsForm"><div class="formgrid">${number('Opening balance (CAD)','opening',state.opening,false,true)}${number('Savings target (%)','budget',state.budget)}${select('Appearance','theme',['light','dark'],state.theme)}</div><p class="muted">Opening balance means your balance immediately before the earliest transaction you enter. All transactions dated on or before today are added to or deducted from this balance automatically; future entries are included only in forecasts.</p><button>Save preferences</button></form>`)+card('Data and backups',`<p>Your data is saved in this browser only. Export backups before moving to a new device or clearing browser data.</p><div class="actions"><button id="export">Export JSON backup</button><button class="secondary" id="csv">Export finance CSV</button><button class="secondary" id="import">Import JSON backup</button><button class="action-delete danger" id="reset">Delete all data</button></div><input id="importFile" type="file" accept="application/json,.json" hidden style="display:none">`)+card('About this prototype','<p>Single-file local HTML application. No login, Firebase, external APIs or network requests. Data does not sync between devices. Local file storage behavior varies by browser.</p>')
 }
 function download(name,body,type){
   const u=URL.createObjectURL(new Blob([body],{
@@ -1768,7 +1779,7 @@ function showDelete(key,id){
   }
   const overlay=document.createElement('div');
   overlay.className='delete-overlay';
-  overlay.innerHTML=`<section class="card delete-box" role="alertdialog" aria-modal="true" aria-label="Confirm deletion"><h2>Delete entry?</h2><p>${esc(item.title||item.course||'This entry')} will be removed.${item.repeat&&item.repeat!=='Once'?' All occurrences of this recurring transaction will be removed.':''}</p><div class="actions"><button type="button" class="secondary" data-no>Cancel</button><button type="button" class="danger" data-yes>Delete</button></div></section>`;
+  overlay.innerHTML=`<section class="card delete-box" role="alertdialog" aria-modal="true" aria-label="Confirm deletion"><h2>Delete entry?</h2><p>${esc(item.title||item.course||'This entry')} will be removed.${item.repeat&&item.repeat!=='Once'?' All occurrences of this recurring transaction will be removed.':''}</p><div class="actions"><button type="button" class="secondary" data-no>Cancel</button><button type="button" class="action-delete danger" data-yes>Delete</button></div></section>`;
   document.body.append(overlay);
   const close=()=>{
     overlay.remove();
