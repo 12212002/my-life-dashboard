@@ -1189,18 +1189,23 @@ function calendarDetails(index){
 let googleOwner='',googleAccountHint='';
 const calendarSessionKey='myLifeDashboard.calendarSession.v1';
 let googleRestoring=false;
-function calendarSaved(){try{return JSON.parse(sessionStorage.getItem(calendarSessionKey)||'null');}catch(e){return null;}}
+function calendarSaved(){
+  for(const type of ['localStorage','sessionStorage']){
+    try{const stored=JSON.parse(window[type].getItem(calendarSessionKey)||'null');if(stored&&stored.owner===googleOwner&&stored.token&&stored.expiry>Date.now())return stored;if(stored&&stored.expiry<=Date.now())window[type].removeItem(calendarSessionKey);}catch(e){}
+  }
+  return null;
+}
 function googleStore(){
   if(!googleOwner||!googleToken)return;
   const value=JSON.stringify({owner:googleOwner,token:googleToken,expiry:googleExpiry,visible:googleCalendars.length?[...googleVisible]:null});
-  try{sessionStorage.setItem(calendarSessionKey,value);}catch(e){}
+  try{localStorage.setItem(calendarSessionKey,value);sessionStorage.removeItem(calendarSessionKey);}catch(e){try{sessionStorage.setItem(calendarSessionKey,value);}catch(e){}}
 }
-function googleForget(){try{sessionStorage.removeItem(calendarSessionKey);}catch(e){}}
+function googleForget(){for(const type of ['localStorage','sessionStorage'])try{window[type].removeItem(calendarSessionKey);}catch(e){}}
 async function googleRestore(){
   if(googleRestoring||googleToken||!cloudReady)return;
   const stored=calendarSaved();
   if(!stored)return;
-  if(stored.owner!==googleOwner||!stored.token||stored.expiry<=Date.now()){googleForget();googleMessage='Calendar authorization expired or belongs to another account. Reconnect Google Calendar.';if(page==='Calendar')render();return;}
+  if(stored.owner!==googleOwner||!stored.token||stored.expiry<=Date.now()){googleForget();googleMessage='Calendar authorization expired or belongs to another account. Reconnect Google Calendar.';if(page==='Calendar'||page==='Home')render();return;}
   googleRestoring=true;
   const session=++googleSession;
   googleToken=stored.token;googleExpiry=stored.expiry;
@@ -1216,7 +1221,7 @@ async function googleRestore(){
     if(session!==googleSession)return;
     googleDisconnect(false);googleForget();googleMessage='Calendar session unavailable. Reconnect Google Calendar.';
     if(page==='Calendar')render();
-  }finally{googleRestoring=false;if(page==='Calendar'&&cloudReady)render();}
+  }finally{googleRestoring=false;if((page==='Calendar'||page==='Home')&&cloudReady)render();}
 }
 
 const googleScopes='https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.calendars.readonly';
@@ -1301,7 +1306,7 @@ window.addEventListener('focus',()=>{if(cloudReady&&page==='Home'&&googleToken&&
 window.addEventListener('focus',()=>{if(cloudReady&&page==='Calendar'&&googleToken&&!googleRestoring&&!googleBusy&&!googleEdit&&Date.now()-calendarLastFocusRefresh>15000){const form=document.getElementById('googleEventForm');if(form&&[...form.elements].some(el=>el.name==='summary'&&el.value.trim()))return;calendarLastFocusRefresh=Date.now();googleRefresh();}});
 function googlePanel(){
   const btn=(action,label,idx='')=>'<button type="button" class="secondary" data-google-action="'+action+'" data-google-index="'+idx+'">'+label+'</button>';
-  if(!googleToken)return card('Google Calendar','<p class="muted">'+esc(googleMessage||'Connect your private Google calendars. Your connection is remembered in this tab until Google authorization expires.')+'</p>'+btn('connect','Connect Google Calendar'));
+  if(!googleToken)return card('Google Calendar','<p class="muted">'+esc(googleMessage||'Connect your private Google calendars. Your connection is remembered in this browser until Google authorization expires. Disconnect or sign out to clear it.')+'</p>'+btn('connect','Connect Google Calendar'));
   const calendars=googleCalendars.map(a=>'<label style="display:flex;gap:8px;align-items:center"><input style="width:auto" type="checkbox" name="googleVisible" value="'+esc(a.id)+'" '+(googleVisible.has(a.id)?'checked':'')+'><span style="color:'+(/^#[0-9a-f]{6}$/i.test(a.backgroundColor||'')?a.backgroundColor:'inherit')+'">●</span>'+esc(a.summary)+'</label>').join('');
   const x=googleEdit?.raw||{}, writable=googleCalendars.filter(a=>['owner','writer'].includes(a.accessRole));
   const start=x.start?.dateTime?new Date(x.start.dateTime):null,end=x.end?.dateTime?new Date(x.end.dateTime):null;
