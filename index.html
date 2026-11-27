@@ -1114,7 +1114,7 @@ function spendingBudgetValues(monthly,day,period,entries){
  const days=new Date(Number(day.slice(0,4)),Number(day.slice(5,7)),0).getDate();
  const start=period==='Day'?day:period==='Year'?day.slice(0,4)+'-01-01':day.slice(0,7)+'-01';
  const limit=configured?(period==='Day'?m/days:period==='Year'?m*12:m):0;
- const spent=entries.filter(t=>t.type==='Expense'&&['Food','Gas','Shopping','Entertainment'].includes(t.category)&&t.date>=start&&t.date<=day).reduce((a,t)=>a+Number(t.amount),0);
+ const spent=entries.filter(t=>t.type==='Expense'&&['Food','Gas','Shopping','Entertainment','Other'].includes(t.category)&&t.date>=start&&t.date<=day).reduce((a,t)=>a+Number(t.amount),0);
  const percent=configured?spent/limit*100:0;
  return {configured,limit,spent,percent,remaining:limit-spent,days};
 }
