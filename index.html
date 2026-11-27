@@ -791,6 +791,14 @@ body.dark .cal-scroll{--calendar-grid:#3c4043;--calendar-bg:#202124;--calendar-t
 .cal-scroll .week-banner.continues-before{clip-path:polygon(7px 0,100% 0,100% 100%,7px 100%,0 50%);padding-left:11px}
 .cal-scroll .week-banner.continues-after{clip-path:polygon(0 0,calc(100% - 7px) 0,100% 50%,calc(100% - 7px) 100%,0 100%);padding-right:11px}
 .cal-scroll .week-banner.continues-before.continues-after{clip-path:polygon(7px 0,calc(100% - 7px) 0,100% 50%,calc(100% - 7px) 100%,7px 100%,0 50%)}
+
+.cal-scroll .month-grid>.month-week{grid-column:1/-1;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));position:relative;padding:0;border-right:0;min-height:112px;align-content:start}
+.cal-scroll .month-week-cell{border-right:1px solid var(--calendar-grid);min-width:0;pointer-events:none}
+.cal-scroll .month-week-date{z-index:1;min-width:0}
+.cal-scroll .month-week-timed{z-index:1;min-width:0;padding:0 3px 4px;overflow:hidden}
+.cal-scroll .month-week .month-span{height:19px;line-height:15px;font-size:11px;margin:1px 3px;padding:2px 5px;z-index:2;width:auto;min-width:0}
+.cal-scroll .month-week .month-span.continues-before{padding-left:11px}
+.cal-scroll .month-week .month-span.continues-after{padding-right:11px}
 </style>
 </head>
 <body>
@@ -1504,6 +1512,21 @@ function weekBannerHTML(days){
     return '<'+tag+(googleIndex>=0?' type="button" data-google-details="'+googleIndex+'"':'')+' class="week-banner '+(b.before?'continues-before ':'')+(b.after?'continues-after':'')+'" style="grid-column:'+(b.first+2)+' / '+(b.last+3)+';grid-row:'+(b.lane+1)+';'+eventColorStyle(event,false)+'" title="'+esc(event.title)+'">'+esc(event.title)+'</'+tag+'>';
   }).join('')+'</div>';
 }
+function monthWeekHTML(days,month){
+  const {bars}=weekBannerLayout(days,calItems);
+  const lanes=bars.length?Math.max(...bars.map(b=>b.lane))+1:0;
+  const cells=days.map((day,i)=>{
+    const todayClass=day===easternToday()?'is-today':'';
+    const outside=day.slice(0,7)!==month?'outside':'';
+    const timed=calItems(day).filter(a=>!bannerEvent(a));
+    return '<div class="month-week-cell '+todayClass+' '+outside+'" style="grid-column:'+(i+1)+';grid-row:1 / '+(lanes+3)+'"></div><div class="month-week-date '+todayClass+' '+outside+'" style="grid-column:'+(i+1)+';grid-row:1"><span class="cal-date">'+Number(day.slice(-2))+'</span></div><div class="month-week-timed '+outside+'" style="grid-column:'+(i+1)+';grid-row:'+(lanes+2)+'">'+timed.map(a=>calEvent(a)).join('')+'</div>';
+  }).join('');
+  const banners=bars.map(b=>{
+    const a=b.a,index=a.calendarId?googleEvents.indexOf(a):-1,tag=index>=0?'button':'div';
+    return '<'+tag+(index>=0?' type="button" data-google-details="'+index+'"':'')+' class="week-banner month-span '+(b.before?'continues-before ':'')+(b.after?'continues-after':'')+'" style="grid-column:'+(b.first+1)+' / '+(b.last+2)+';grid-row:'+(b.lane+2)+';'+eventColorStyle(a,false)+'" title="'+esc(a.title)+'">'+esc(a.title)+'</'+tag+'>';
+  }).join('');
+  return '<div class="month-week" style="grid-template-rows:32px '+(lanes?'repeat('+lanes+',23px) ':'')+'minmax(0,1fr)">'+cells+banners+'</div>';
+}
 function calendar(){
   const x=current('calendar'),d=dateObj(calAnchor),first=calAnchor.slice(0,7)+'-01',start=weekStart(calView==='Month'?first:calAnchor),days=calView==='Month'?Array.from({
     length:Math.ceil((dateObj(first).getDay()+Number(monthEnd(first.slice(0,7)).slice(-2)))/7)*7
@@ -1519,7 +1542,7 @@ function calendar(){
   });
   let grid;
   if(calView==='Month'){
-    grid=`<div class="month-grid">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(v=>`<div class="weekday">${v}</div>`).join('')}${days.map(day=>`<div class="${day===easternToday()?'is-today':''} ${day.slice(0,7)!==first.slice(0,7)?'outside':''}"><span class="cal-date">${Number(day.slice(-2))}</span>${calItems(day).map(a=>calEvent(a)).join('')}</div>`).join('')}</div>`
+    grid=`<div class="month-grid">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(v=>`<div class="weekday">${v}</div>`).join('')}${Array.from({length:days.length/7},(_,i)=>monthWeekHTML(days.slice(i*7,i*7+7),first.slice(0,7))).join('')}</div>`
   } else{
     grid=`<div class="week-grid"><div class="week-head"></div>${days.map(day=>`<div class="week-head ${day===easternToday()?'is-today':''}">${dateObj(day).toLocaleDateString('en-CA',{weekday:'short'})}<br><span class="cal-date">${Number(day.slice(-2))}</span></div>`).join('')}${weekBannerHTML(days)}<div class="week-hours">${Array.from({length:24},(_,h)=>`<span class="hour-label" style="top:${h*60}px">${h%12||12} ${h<12?'AM':'PM'}</span>`).join('')}</div>${days.map(day=>`<div class="week-day ${day===easternToday()?'is-today':''}">${layoutWeekEvents(calItems(day).filter(a=>a.time&&!bannerEvent(a))).map(item=>calEvent(item.a,'week-event',item)).join('')}${day===easternToday()?'<div class="now-line"></div>':''}</div>`).join('')}</div>`
   }
