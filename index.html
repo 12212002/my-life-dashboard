@@ -1309,6 +1309,16 @@ function layoutWeekEvents(events){
         const long=(a.end-a.start)>=(b.end-b.start)?a:b;
         const short=long===a?b:a;
         const shared=Math.min(long.end,short.end)-Math.max(long.start,short.start);
+        // A shorter event crossing the end of a long anchor is a wide foreground overlay.
+        if(shared>0&&short.start>=long.start&&short.end>long.end&&short.start>=long.end-180&&(long.end-long.start)>=2*(short.end-short.start)){
+          long.left=left;long.width=width*.94;long.layer=layer;long.bandLeft=left;long.bandWidth=width;
+          short.left=left+width*.06;short.width=width*.88;short.layer=layer+1;short.bandLeft=short.left;short.bandWidth=short.width;
+          for(const item of group){
+            const children=sorted.filter(x=>x.parent===item);
+            if(children.length)place(children,item.left+item.width*.48,item.width*.52,item.layer+1);
+          }
+          group=[];groupEnd=-1;return;
+        }
         if(shared>0&&(long.end-long.start)>=2.5*(short.end-short.start)&&shared<=60){
           long.left=left;long.width=width*.86;long.layer=layer;long.bandLeft=left;long.bandWidth=width;
           short.left=left+width*.48;short.width=width*.52;short.layer=layer+1;
