@@ -1071,12 +1071,26 @@ function home(){
   const upcoming=homeUpcoming();
   return `<div class="grid">${metric('Estimated balance',money(balance(today())))}${metric('This month net',money(t.income-t.expense))}${metric('Open work tasks',state.work.filter(x=>x.status!=='Done').length)}${metric('Upcoming items',upcoming.length)}</div>${card('Coming up',homeAgendaHTML(upcoming))}<div class="grid">${sections.slice(1).map(([n,i,d])=>`<button class="card tile" data-go="${n}"><span>${i}</span><strong>${n}</strong><small>${d}</small></button>`).join('')}</div>`
 }
-const cats=['Food','Paycheck','Car Payments','Car Insurance','Gas','Shopping','Entertainment','Subscriptions','Other'];
+const cats=['Food','Paycheck','Other Income','Car Payments','Car Insurance','Gas','Shopping','Entertainment','Subscriptions','Other'];
+const incomeCats=['Paycheck','Other Income'];
+const expenseCats=cats.filter(c=>!incomeCats.includes(c));
+function financeCategories(type){return type==='Income'?incomeCats:expenseCats;}
+function financeCategory(type,category){const options=financeCategories(type);return options.includes(category)?category:type==='Income'?'Paycheck':'Other';}
+function updateFinanceCategories(form){
+ const type=form.elements.namedItem('type'),category=form.elements.namedItem('category');
+ if(!type||!category)return;
+ const value=financeCategory(type.value,category.value);
+ category.innerHTML=financeCategories(type.value).map(x=>'<option value="'+esc(x)+'">'+esc(x)+'</option>').join('');
+ category.value=value;
+ updateFinanceDescription(form);
+}
+
 function normalizeFinanceCategories(data){
  let changed=false;
- const renamed={'Paycheque':'Paycheck','Car payment':'Car Payments'};
+ const renamed={'Paycheque':'Paycheck','Car payment':'Car Payments','Other income':'Other Income'};
  for(const t of data.transactions||[]){
- const next=cats.includes(t.category)?t.category:(Object.hasOwn(renamed,t.category)?renamed[t.category]:'Other');
+ const raw=Object.hasOwn(renamed,t.category)?renamed[t.category]:t.category;
+ const next=t.type==='Income'?(raw==='Paycheck'?'Paycheck':'Other Income'):(expenseCats.includes(raw)?raw:'Other');
  if(t.category!==next){t.category=next;changed=true;}
  }
  return changed;
@@ -1084,6 +1098,7 @@ function normalizeFinanceCategories(data){
 
 function transactionCategoryMatches(a,filter){
  if(filter==='All')return true;
+ if(filter==='All Income')return a.type==='Income';
  if(filter==='Fixed Expenses')return a.type==='Expense'&&['Car Payments','Car Insurance','Subscriptions'].includes(a.category);
  if(filter==='Variable Expenses')return a.type==='Expense'&&['Food','Gas','Shopping','Entertainment','Other'].includes(a.category);
  return a.category===filter;
@@ -1153,7 +1168,7 @@ function finance(){
       m,...z,b:balance(monthEnd(m))
     })
   }
-  return `<div class="grid">${metric('Balance as of today',money(now),now<0?'red':'')}${metric('Income this month to date',money(actual.income),'green')}${metric('Expenses this month to date',money(actual.expense),'red')}${metric('Month-end forecast',money(balance(monthEnd(today().slice(0,7)))))}</div>${card(edit?.key==='transactions'?'Edit transaction / series':'Add income or expense',form('transactions',select('Type','type',['Expense','Income'],x.type||'Expense')+number('Amount (CAD)','amount',x.amount??'')+field('Date','date',x.date||today(),'date','required')+select('Category','category',cats,x.category||'Other')+financeDescriptionField(x)+select('Repeat','repeat',['Once','Weekly','Biweekly','Monthly','Yearly'],x.repeat||'Once')+field('End date (optional)','end',x.end||'','date'))+'<p class="muted">Recurring entries automatically appear in projections. Income and expenses affect your balance automatically on their scheduled dates. Editing a recurring entry changes its entire series; to change a future payment, end the old series and add a new one.</p>')}${spendingBudgetCard()}${card('Transaction register',`<div class="filterbar">${field('From date','txFrom',txFrom,'date')}${field('To date','txTo',txTo,'date')}${select('Category','txCategory',['All','Fixed Expenses','Variable Expenses',...cats],txCategory)}<button class="secondary" data-clear-tx>Clear filters</button></div>${transactionRows()}`)}${card('Select month',`<div class="formgrid">${field('Select month','financeMonth',month,'month')}</div>`)}${upcomingPaymentsCard(month)}${card('Monthly breakdown',`<div class="grid" style="margin-top:12px">${metric('Planned income',money(t.income))}${metric('Planned expenses',money(t.expense))}${metric('Planned surplus',money(net),net<0?'red':'green')}</div>${table(['Date','Description','Amount'],t.list.sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(a.title),money(signed(a))]))}<h3>Spending by category</h3>${cats.map(c=>({c,v:sum(t.list.filter(a=>a.type==='Expense'&&a.category===c).map(a=>a.amount))})).filter(a=>a.v>0).sort((a,b)=>b.v-a.v).map(a=>`<div class="row"><span>${a.c}</span><strong>${money(a.v)}</strong></div><div class="bar"><div style="width:${a.v/(t.expense||1)*100}%"></div></div>`).join('')||'<p class="muted">No expenses this month.</p>'}`)}${card('Budget recommendation',`<p class="muted">Based on the selected month's entered income and expenses. Adjust your savings target in Settings.</p>${table(['Category','Recommended','Planned'],[['Essentials',money(essential),money(essential)],['Discretionary spending',money(allowed),money(discretionary)],['Savings ('+state.budget+'%)',money(target),money(net)]])}<p>${budgetIncome<=0?'Add income to receive a meaningful budget recommendation.':essential+target>budgetIncome?'Your essential expenses and savings target exceed income. Consider reducing obligations or adjusting your savings target.':discretionary>allowed?'Reduce discretionary spending by '+money(discretionary-allowed)+' to reach your savings target.':'Your entered spending fits your savings target. You have '+money(allowed-discretionary)+' of additional discretionary room.'}</p>`)}${card('Financial projections',`<div class="formgrid"><label>Forecast horizon<select id="horizon">${[3,6,12,24,60,120].map(n=>`<option value="${n}" ${n===state.projection?'selected':''}>${n} months</option>`).join('')}</select></label></div><p class="muted">Includes all dated entries and recurring series. No assumed investment returns or inflation.</p><div class="metric ${forecast.at(-1).b<0?'red':'green'}">${money(forecast.at(-1).b)}</div>${forecastChart(now,forecast)}${forecast.some(f=>f.b<0)?'<p class="red">Warning: a projected month-end balance is negative.</p>':''}${table(['Month','Income','Expenses','Ending balance'],forecast.map(f=>[f.m,money(f.income),money(f.expense),`<span class="${f.b<0?'red':'green'}">${money(f.b)}</span>`]))}`)}`
+  return `<div class="grid">${metric('Balance as of today',money(now),now<0?'red':'')}${metric('Income this month to date',money(actual.income),'green')}${metric('Expenses this month to date',money(actual.expense),'red')}${metric('Month-end forecast',money(balance(monthEnd(today().slice(0,7)))))}</div>${card(edit?.key==='transactions'?'Edit transaction / series':'Add income or expense',form('transactions',select('Type','type',['Expense','Income'],x.type||'Expense')+number('Amount (CAD)','amount',x.amount??'')+field('Date','date',x.date||today(),'date','required')+select('Category','category',financeCategories(x.type||'Expense'),financeCategory(x.type||'Expense',x.category))+financeDescriptionField(x)+select('Repeat','repeat',['Once','Weekly','Biweekly','Monthly','Yearly'],x.repeat||'Once')+field('End date (optional)','end',x.end||'','date'))+'<p class="muted">Recurring entries automatically appear in projections. Income and expenses affect your balance automatically on their scheduled dates. Editing a recurring entry changes its entire series; to change a future payment, end the old series and add a new one.</p>')}${spendingBudgetCard()}${card('Transaction register',`<div class="filterbar">${field('From date','txFrom',txFrom,'date')}${field('To date','txTo',txTo,'date')}${select('Category','txCategory',['All','All Income','Fixed Expenses','Variable Expenses',...cats],txCategory)}<button class="secondary" data-clear-tx>Clear filters</button></div>${transactionRows()}`)}${card('Select month',`<div class="formgrid">${field('Select month','financeMonth',month,'month')}</div>`)}${upcomingPaymentsCard(month)}${card('Monthly breakdown',`<div class="grid" style="margin-top:12px">${metric('Planned income',money(t.income))}${metric('Planned expenses',money(t.expense))}${metric('Planned surplus',money(net),net<0?'red':'green')}</div>${table(['Date','Description','Amount'],t.list.sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(a.title),money(signed(a))]))}<h3>Spending by category</h3>${cats.map(c=>({c,v:sum(t.list.filter(a=>a.type==='Expense'&&a.category===c).map(a=>a.amount))})).filter(a=>a.v>0).sort((a,b)=>b.v-a.v).map(a=>`<div class="row"><span>${a.c}</span><strong>${money(a.v)}</strong></div><div class="bar"><div style="width:${a.v/(t.expense||1)*100}%"></div></div>`).join('')||'<p class="muted">No expenses this month.</p>'}`)}${card('Budget recommendation',`<p class="muted">Based on the selected month's entered income and expenses. Adjust your savings target in Settings.</p>${table(['Category','Recommended','Planned'],[['Essentials',money(essential),money(essential)],['Discretionary spending',money(allowed),money(discretionary)],['Savings ('+state.budget+'%)',money(target),money(net)]])}<p>${budgetIncome<=0?'Add income to receive a meaningful budget recommendation.':essential+target>budgetIncome?'Your essential expenses and savings target exceed income. Consider reducing obligations or adjusting your savings target.':discretionary>allowed?'Reduce discretionary spending by '+money(discretionary-allowed)+' to reach your savings target.':'Your entered spending fits your savings target. You have '+money(allowed-discretionary)+' of additional discretionary room.'}</p>`)}${card('Financial projections',`<div class="formgrid"><label>Forecast horizon<select id="horizon">${[3,6,12,24,60,120].map(n=>`<option value="${n}" ${n===state.projection?'selected':''}>${n} months</option>`).join('')}</select></label></div><p class="muted">Includes all dated entries and recurring series. No assumed investment returns or inflation.</p><div class="metric ${forecast.at(-1).b<0?'red':'green'}">${money(forecast.at(-1).b)}</div>${forecastChart(now,forecast)}${forecast.some(f=>f.b<0)?'<p class="red">Warning: a projected month-end balance is negative.</p>':''}${table(['Month','Income','Expenses','Ending balance'],forecast.map(f=>[f.m,money(f.income),money(f.expense),`<span class="${f.b<0?'red':'green'}">${money(f.b)}</span>`]))}`)}`
 }
 function forecastChart(now,forecast){
   const values=[{
@@ -1851,6 +1866,7 @@ function bind(){
   }
   root.onchange=e=>{
     const el=e.target;
+    if(el.name==='type'&&el.form?.dataset.form==='transactions'){updateFinanceCategories(el.form);return;}
     if(el.name==='category'&&el.form?.dataset.form==='transactions'){updateFinanceDescription(el.form);return;}
     if(['workFilter','txFrom','txTo','txCategory','linkCategory'].includes(el.name)){
       if(el.name==='workFilter')workFilter=el.value;
@@ -1961,6 +1977,7 @@ function bind(){
           a.course=c.title;
           a.semesterId=semesterId;
         }
+        if(key==='transactions')a.category=financeCategory(a.type,a.category);
         if(key==='transactions'&&!a.title.trim())a.title=a.category==='Other'?a.type:a.category;
         for(const k of ['amount','mileage','weight','grade'])if(k in a)a[k]=k==='grade'&&a[k].trim()===''?null:parseAmount(a[k]);
         if(key==='transactions'&&(a.amount<=0||a.end&&a.end<a.date))throw Error('Enter a positive amount and an end date on or after the start date.');
