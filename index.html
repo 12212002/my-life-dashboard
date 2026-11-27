@@ -919,8 +919,16 @@ body:not(.authenticated)>aside,body:not(.authenticated)>main{display:none}
  .cal-week-scroll .now-line:before{width:6px;height:6px;top:-2px;left:-3px}
  #content>.card:has(.cal-week-scroll){padding:10px}
 }
+
+/* Avoid flashing the public login page while Firebase restores an existing session. */
+#authGate .session-loader{display:none}
+#authGate.restoring-session{align-items:center;justify-content:center}
+#authGate.restoring-session .login-shell{display:none}
+#authGate.restoring-session .session-loader{display:flex;flex-direction:column;align-items:center;gap:18px;color:#a6b4c9;font-size:14px;text-align:center}
+#authGate .session-loader img{object-fit:contain}
+@media(max-width:760px){.cal-scroll.cal-week-scroll .week-time-scroll{height:750px;max-height:none;min-height:750px}}
 </style>
-<div id="authGate"><div class="login-shell">
+<div id="authGate" class="restoring-session"><div class="session-loader" role="status" aria-live="polite"><img src="./mylife-sidebar.svg?v=3" width="86" height="52" alt="MyLife"><span id="sessionLoadingMessage">Loading your dashboard…</span></div><div class="login-shell">
 <div class="login-brand"><img src="./mylife-sidebar.svg?v=3" alt="" width="43" height="28"><span>MyLife - Dashboard</span></div>
 <div class="login-layout">
 <section class="login-intro" aria-labelledby="loginHeadline">
@@ -2228,7 +2236,8 @@ import { getFirestore, doc, getDocFromServer, setDoc, onSnapshot, collection, ge
 
 const gate=$('authGate'), message=$('authMessage'), login=$('googleLogin'), status=$('cloudStatus');
 let accessUnsubscribe=null,unsubscribe=null,generation=0,pending=0,failed=false,queue=Promise.resolve(),lastRemote=null;
-function lock(msg){
+function lock(msg,restoring=false){
+  gate.classList.toggle('restoring-session',restoring);
   accessAdmin=false;accessAdminLoad=null;accessFilter='active';$('accessRequestPanel').hidden=true;
   googleDisconnect(false);
   cloudReady=false;cloudSave=null;
@@ -2256,6 +2265,7 @@ try{
     try{await getDocFromServer(doc(db,'accessAdmin','owner'));return true;}catch{return false;}
   }
   function showRequestGate(user,record){
+    gate.classList.remove('restoring-session');
     const status=record?.status;
     $('accessRequestPanel').hidden=false;
     $('requestAccess').hidden=!!record;
@@ -2301,16 +2311,21 @@ try{
     const session=++generation;
     if(unsubscribe){unsubscribe();unsubscribe=null;}
     if(accessUnsubscribe){accessUnsubscribe();accessUnsubscribe=null;}
-    lock(user?'Checking private database access…':'Sign in to continue.');
+    lock(user?'Checking private database access…':'Sign in to continue.',!!user);
     login.hidden=!!user;login.disabled=!!user;$('gateLogout').hidden=!user;
     if(!user){if(googleOwner)googleForget();googleOwner='';googleAccountHint='';return;}
     googleOwner=user.uid;googleAccountHint=user.email||'';
     const ref=doc(db,'users',user.uid,'dashboard','state');
     try{
-      const owner=await isOwner();if(session!==generation)return;
-      if(!owner){try{const req=await getDocFromServer(requestRef(user));if(session!==generation)return;if(!req.exists()||req.data().status!=='approved'){showRequestGate(user,req.exists()?req.data():null);return;}}catch(e){if(session!==generation)return;if(e.code!=='permission-denied')throw e;/* Existing rules may not yet support requests. */}}
-      const snapshot=await getDocFromServer(ref);
+      const ownerPromise=isOwner();
+      const requestPromise=getDocFromServer(requestRef(user)).then(value=>({value}),error=>({error}));
+      const statePromise=getDocFromServer(ref).then(value=>({value}),error=>({error}));
+      const owner=await ownerPromise;if(session!==generation)return;
+      if(!owner){try{const result=await requestPromise;if(result.error)throw result.error;const req=result.value;if(session!==generation)return;if(!req.exists()||req.data().status!=='approved'){showRequestGate(user,req.exists()?req.data():null);return;}}catch(e){if(session!==generation)return;if(e.code!=='permission-denied')throw e;/* Existing rules may not yet support requests. */}}
+      const stateResult=await statePromise;
       if(session!==generation)return;
+      if(stateResult.error)throw stateResult.error;
+      const snapshot=stateResult.value;
       if(snapshot.exists()){
         const remote=snapshot.data().state;
         if(!remote||typeof remote!=='object')throw Error('Invalid cloud data.');
@@ -2350,7 +2365,7 @@ try{
       lock('Access denied or database unavailable. Check your Firestore rules and authorized Google account. ('+(e.code||e.message)+')');
     }
   });
-}catch(e){message.textContent='Firebase setup error: '+e.message;}
+}catch(e){gate.classList.remove('restoring-session');message.textContent='Firebase setup error: '+e.message;}
 
 </script>
 </body>
