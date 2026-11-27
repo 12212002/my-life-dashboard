@@ -927,10 +927,10 @@ body:not(.authenticated)>aside,body:not(.authenticated)>main{display:none}
 #authGate.restoring-session .session-loader{display:flex;flex-direction:column;align-items:center;gap:18px;color:#a6b4c9;font-size:14px;text-align:center}
 #authGate .session-loader img{object-fit:contain}
 @media(max-width:760px){
- .cal-scroll.cal-week-scroll{--minute-px:0.6666667px; -webkit-text-size-adjust:100%;text-size-adjust:100%; width:100%;max-width:100%}
- .cal-scroll.cal-week-scroll .week-time-scroll{height:500px;max-height:none;min-height:500px}
- .cal-week-scroll .week-hours,.cal-week-scroll .week-day{height:960px}
- .cal-week-scroll .week-day{background-image:repeating-linear-gradient(to bottom,var(--calendar-grid) 0px,var(--calendar-grid) 1px,transparent 1px,transparent 40px)}
+ .cal-scroll.cal-week-scroll{--minute-px:0.5333333333px; -webkit-text-size-adjust:100%;text-size-adjust:100%; width:100%;max-width:100%}
+ .cal-scroll.cal-week-scroll .week-time-scroll{height:400px;max-height:none;min-height:400px}
+ .cal-week-scroll .week-hours,.cal-week-scroll .week-day{height:768px}
+ .cal-week-scroll .week-day{background-image:repeating-linear-gradient(to bottom,var(--calendar-grid) 0px,var(--calendar-grid) 1px,transparent 1px,transparent 32px)}
  .cal-week-scroll .week-grid,.cal-week-scroll .week-banner-grid{grid-template-columns:30px repeat(7,minmax(0,1fr))}
  .cal-week-scroll .week-event,.cal-week-scroll .week-event.compact{padding:2px 1px;min-width:0}
  .cal-week-scroll .week-event .event-title,.cal-week-scroll .week-event.compact .event-title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;overflow-wrap:normal;word-break:normal;hyphens:none;font-size:11px;line-height:1.15;text-overflow:ellipsis}
@@ -943,6 +943,8 @@ body:not(.authenticated)>aside,body:not(.authenticated)>main{display:none}
 }
 
 .event-time-mobile{display:none}@media(max-width:760px){.cal-week-scroll .week-event .event-time-full{display:none}.cal-week-scroll .week-event .event-time-mobile{display:inline}}
+
+@media(max-width:760px){.cal-week-scroll .week-event .event-title,.cal-week-scroll .week-event.compact .event-title{font-size:10px;line-height:1.12;overflow-wrap:normal;word-break:normal;-webkit-line-clamp:3}.cal-week-scroll .week-event{min-width:0}.cal-week-scroll .week-event .event-time{display:none}.cal-week-scroll .week-head{padding-top:4px;padding-bottom:4px}.cal-week-scroll .week-banner-grid{min-height:28px}}
 </style>
 <div id="authGate" class="restoring-session"><div class="session-loader" role="status" aria-live="polite"><img src="./mylife-sidebar.svg?v=3" width="86" height="52" alt="MyLife"><span id="sessionLoadingMessage">Loading your dashboard…</span></div><div class="login-shell">
 <div class="login-brand"><img src="./mylife-sidebar.svg?v=3" alt="" width="43" height="28"><span>MyLife - Dashboard</span></div>
@@ -1039,7 +1041,7 @@ function go(p){
   if(p==='Calendar'&&!googleRestoring){if(googleToken)googleRefresh();else googleRestore();}
 }
 const navMonoIcons={"Home":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m3 10 9-7 9 7M5 9v11h14V9M9 20v-7h6v7\"/></svg>","University":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m2 9 10-5 10 5-10 5-10-5ZM6 11v6c3 3 9 3 12 0v-6M22 9v6\"/></svg>","Work":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"7\" width=\"18\" height=\"14\" rx=\"2\"/><path d=\"M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18M10 13v2h4v-2\"/></svg>","Calendar":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"2\"/><path d=\"M16 3v4M8 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01\"/></svg>","Finances":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"9\" cy=\"9\" r=\"6\"/><path d=\"M9 6v6M15.5 9.5a6 6 0 1 1-6 6M16 14v5\"/></svg>","Vehicle":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m5 11 2-6h10l2 6M3 15v-2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2M3 15h18v4H3zM5 19v2M19 19v2M7 15h.01M17 15h.01\"/></svg>","Workspace":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"4\" y=\"4\" width=\"16\" height=\"13\" rx=\"2\"/><path d=\"m4 17-2 3h20l-2-3\"/></svg>","Settings":"<svg class=\"nav-mono-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m10 3 4 0 .7 2.5 2 .9 2.3-1.2 2 3.5-1.9 1.7v3.2l1.9 1.7-2 3.5-2.3-1.2-2 .9L14 21h-4l-.7-2.5-2-.9L5 18.8l-2-3.5 1.9-1.7v-3.2L3 8.7l2-3.5 2.3 1.2 2-.9L10 3Z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>"};
-function weekStartScroll(){return matchMedia('(max-width:760px)').matches?320:480;}
+function weekStartScroll(){return matchMedia('(max-width:760px)').matches?256:480;}
 function render(){
   const oldWeek=document.querySelector('#content .cal-week-scroll');
   const weekPosition=oldWeek?{key:oldWeek.dataset.weekKey,top:oldWeek.querySelector('.week-time-scroll')?.scrollTop??weekStartScroll(),left:oldWeek.scrollLeft}:null;
