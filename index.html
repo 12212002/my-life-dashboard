@@ -1805,8 +1805,8 @@ async function runEventSearch(form){
  show();
 }
 
-function calendar(){
-  const x=current('calendar'),d=dateObj(calAnchor),first=calAnchor.slice(0,7)+'-01',start=weekStart(calView==='Month'?first:calAnchor),days=calView==='Month'?Array.from({
+function calendarGrid(){
+  const d=dateObj(calAnchor),first=calAnchor.slice(0,7)+'-01',start=weekStart(calView==='Month'?first:calAnchor),days=calView==='Month'?Array.from({
     length:Math.ceil((dateObj(first).getDay()+Number(monthEnd(first.slice(0,7)).slice(-2)))/7)*7
   },(_,i)=>shiftDay(start,i)):Array.from({
     length:7
@@ -1824,6 +1824,24 @@ function calendar(){
   } else{
     grid=`<div class="week-grid"><div class="week-head"></div>${days.map(day=>`<div class="week-head ${day===easternToday()?'is-today':''}">${dateObj(day).toLocaleDateString('en-CA',{weekday:'short'})}<br><span class="cal-date">${Number(day.slice(-2))}</span></div>`).join('')}${weekBannerHTML(days)}<div class="week-hours">${Array.from({length:24},(_,h)=>`<span class="hour-label" style="top:${h*60}px">${h%12||12} ${h<12?'AM':'PM'}</span>`).join('')}</div>${days.map(day=>`<div class="week-day ${day===easternToday()?'is-today':''}">${layoutWeekEvents(calItems(day).filter(a=>a.time&&!bannerEvent(a))).map(item=>calEvent(item.a,'week-event',item)).join('')}${day===easternToday()?'<div class="now-line"></div>':''}</div>`).join('')}</div>`
   }
+  return {grid,title};
+}
+function refreshCalendarVisibility(checkbox){
+  const scroll=document.querySelector('#content .cal-scroll');
+  if(!scroll)return;
+  // Keep the actual checkbox and forms mounted. Calendar height can change
+  // when events disappear, so compensate using the checkbox as a visual anchor.
+  const top=checkbox.getBoundingClientRect().top;
+  const x=scroll.scrollLeft,y=scroll.scrollTop;
+  const pageX=window.scrollX;
+  scroll.innerHTML=calendarGrid().grid;
+  scroll.scrollLeft=x;scroll.scrollTop=y;
+  clockLine();
+  const delta=checkbox.getBoundingClientRect().top-top;
+  if(Math.abs(delta)>0.5)window.scrollTo({left:pageX,top:window.scrollY+delta,behavior:'instant'});
+}
+function calendar(){
+  const x=current('calendar'),{grid,title}=calendarGrid();
   return card('Schedule',`<div data-render-day="${easternToday()}" class="cal-toolbar"><div class="row"><button class="secondary" data-cal="-1">←</button><button class="secondary" data-cal="today">Today</button><button class="secondary" data-cal="1">→</button><strong>${title}</strong></div><div class="row"><button class="${calView==='Month'?'':'secondary'}" data-cal-view="Month">Month</button><button class="${calView==='Week'?'':'secondary'}" data-cal-view="Week">Week</button></div></div><div class="cal-scroll">${grid}</div><p class="muted">Google Calendar colours · Eastern time (Toronto) · Click a Google event for details.</p>`)+googlePanel()+card(edit?.key==='calendar'?'Edit event':'Add event',form('calendar',field('Event','title',x.title||'','text','required')+field('Date','date',x.date||easternToday(),'date','required')+field('Time','time',x.time||'','time')+field('Location / notes','notes',x.notes||'')))+card('Events',table(['Date','Time','Event','Notes','Actions'],[...state.calendar].sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(timeLabel(a.time)||'—'),esc(a.title),esc(a.notes),controls('calendar',a.id)])))+eventSearchCard()
 }
 function latestVehicleMileage(rows){const values=rows.map(a=>a.mileage).filter(n=>Number.isFinite(n));return values.length?Math.max(...values).toLocaleString()+' km':'—';}
@@ -1957,7 +1975,7 @@ function bind(){
       render();
       return
     }
-    if(el.name==='googleVisible'){if(el.checked)googleVisible.add(el.value);else googleVisible.delete(el.value);googleStore();render();return;}
+    if(el.name==='googleVisible'){if(el.checked)googleVisible.add(el.value);else googleVisible.delete(el.value);googleStore();refreshCalendarVisibility(el);return;}
     if(el.name==='activeSemester'){
       semesterId=el.value;
       courseFilter='';
