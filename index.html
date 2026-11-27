@@ -959,26 +959,6 @@ function signed(t){
 function balance(end){
   return state.opening+sum(occurrences(end).map(signed))
 }
-function transactionConfirmed(t){
-  return Object.prototype.hasOwnProperty.call(t.confirmedDates||{},t.date)&&t.confirmedDates[t.date]===true;
-}
-function actualBalance(end){
-  return state.opening+sum(occurrences(end).filter(transactionConfirmed).map(signed));
-}
-function actualTotals(m,end){
-  const list=occurrences(end).filter(t=>t.date.startsWith(m)&&transactionConfirmed(t));
-  return {list,income:sum(list.filter(t=>t.type==='Income').map(t=>t.amount)),expense:sum(list.filter(t=>t.type==='Expense').map(t=>t.amount))};
-}
-function paymentControl(t){
-  if(t.date>today())return '<span class="muted">Scheduled</span>';
-  const done=transactionConfirmed(t),label=t.type==='Income'?'Received':'Paid';
-  return '<button type="button" class="secondary" data-payment-id="'+esc(t.id)+'" data-payment-date="'+esc(t.date)+'">'+(done?label+' · Undo':'Mark '+label.toLowerCase())+'</button>';
-}
-function pendingPayments(){
-  const rows=occurrences(today()).filter(t=>!transactionConfirmed(t)).sort((a,b)=>a.date.localeCompare(b.date));
-  return card('Pending payments and income','<p class="muted">Confirm each payment only after it actually occurs. Each recurring payment is tracked separately.</p>'+table(['Due date','Description','Amount','Status'],rows.map(t=>[esc(t.date),esc(t.title),money(signed(t)),paymentControl(t)])));
-}
-
 function totals(m,end=monthEnd(m)){
   const list=occurrences(end).filter(t=>t.date.startsWith(m));
   return {
@@ -986,13 +966,13 @@ function totals(m,end=monthEnd(m)){
   }
 }
 function home(){
-  const t=actualTotals(today().slice(0,7),today());
+  const t=totals(today().slice(0,7),today());
   const upcoming=[...state.calendar.map(x=>({
     ...x,title:x.title
   })),...state.university.filter(x=>x.date).map(x=>({
     ...x,title:x.course+' — '+x.title
   })),...state.work.filter(x=>x.status!=='Done'&&x.date)].filter(x=>x.date>=today()).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,6);
-  return `<div class="grid">${metric('Estimated balance',money(actualBalance(today())))}${metric('This month net',money(t.income-t.expense))}${metric('Open work tasks',state.work.filter(x=>x.status!=='Done').length)}${metric('Upcoming items',upcoming.length)}</div>${card('Coming up',table(['Date','Item'],upcoming.map(x=>[esc(x.date),esc(x.title)])))}<div class="grid">${sections.slice(1).map(([n,i,d])=>`<button class="card tile" data-go="${n}"><span>${i}</span><strong>${n}</strong><small>${d}</small></button>`).join('')}</div>`
+  return `<div class="grid">${metric('Estimated balance',money(balance(today())))}${metric('This month net',money(t.income-t.expense))}${metric('Open work tasks',state.work.filter(x=>x.status!=='Done').length)}${metric('Upcoming items',upcoming.length)}</div>${card('Coming up',table(['Date','Item'],upcoming.map(x=>[esc(x.date),esc(x.title)])))}<div class="grid">${sections.slice(1).map(([n,i,d])=>`<button class="card tile" data-go="${n}"><span>${i}</span><strong>${n}</strong><small>${d}</small></button>`).join('')}</div>`
 }
 const cats=['Paycheque','Other income','Housing','Groceries','Dining out','Transportation','Car payment','Insurance','Bills','Subscriptions','Shopping','Entertainment','Health','Education','Other'];
 function transactionRows(){
@@ -1000,7 +980,7 @@ function transactionRows(){
   return `<p class="filter-summary">${rows.length} of ${state.transactions.length} entries · Filters apply to transaction or recurring-series start dates.</p>`+table(['Start date','Description','Category','Amount','Repeat','End date','Actions'],rows.map(a=>[esc(a.date),esc(a.title),esc(a.category),`<span class="${a.type==='Income'?'green':'red'}">${a.type==='Income'?'+':'−'}${money(a.amount)}</span>`,esc(a.repeat),esc(a.end||'—'),controls('transactions',a.id)]))
 }
 function finance(){
-  const x=current('transactions'), t=totals(month), actual=actualTotals(today().slice(0,7),today()), now=actualBalance(today()), net=t.income-t.expense;
+  const x=current('transactions'), t=totals(month), actual=totals(today().slice(0,7),today()), now=balance(today()), net=t.income-t.expense;
   const budgetIncome=t.income, target=budgetIncome*state.budget/100, essentials=['Housing','Groceries','Transportation','Car payment','Insurance','Bills','Health','Education'], essential=sum(t.list.filter(a=>a.type==='Expense'&&essentials.includes(a.category)).map(a=>a.amount)), discretionary=t.expense-essential, allowed=Math.max(0,budgetIncome-essential-target);
   const forecast=[];
   for(let i=1;
@@ -1011,7 +991,7 @@ function finance(){
       m,...z,b:balance(monthEnd(m))
     })
   }
-  return `<div class="grid">${metric('Balance as of today',money(now),now<0?'red':'')}${metric('Income this month to date',money(actual.income),'green')}${metric('Expenses this month to date',money(actual.expense),'red')}${metric('Month-end forecast',money(balance(monthEnd(today().slice(0,7)))))}</div>${pendingPayments()}${card(edit?.key==='transactions'?'Edit transaction / series':'Add income or expense',form('transactions',select('Type','type',['Expense','Income'],x.type||'Expense')+number('Amount (CAD)','amount',x.amount??'')+field('Date','date',x.date||today(),'date','required')+select('Category','category',cats,x.category||'Other')+field('Description (optional)','title',x.title||'')+select('Repeat','repeat',['Once','Weekly','Biweekly','Monthly','Yearly'],x.repeat||'Once')+field('End date (optional)','end',x.end||'','date'))+'<p class="muted">Recurring entries automatically appear in projections. Current balance includes confirmed payments and income only. Editing a recurring entry changes its entire series; to change a future payment, end the old series and add a new one.</p>')}${card('Transaction register',`<div class="filterbar">${field('From date','txFrom',txFrom,'date')}${field('To date','txTo',txTo,'date')}${select('Category','txCategory',['All',...new Set([...cats,...state.transactions.map(a=>a.category)])],txCategory)}<button class="secondary" data-clear-tx>Clear filters</button></div>${transactionRows()}`)}${card('Monthly breakdown',`<div class="formgrid">${field('Select month','financeMonth',month,'month')}</div><div class="grid" style="margin-top:12px">${metric('Planned income',money(t.income))}${metric('Planned expenses',money(t.expense))}${metric('Planned surplus',money(net),net<0?'red':'green')}</div>${table(['Date','Description','Amount','Payment status'],t.list.sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(a.title),money(signed(a)),paymentControl(a)]))}<h3>Spending by category</h3>${cats.map(c=>({c,v:sum(t.list.filter(a=>a.type==='Expense'&&a.category===c).map(a=>a.amount))})).filter(a=>a.v>0).sort((a,b)=>b.v-a.v).map(a=>`<div class="row"><span>${a.c}</span><strong>${money(a.v)}</strong></div><div class="bar"><div style="width:${a.v/(t.expense||1)*100}%"></div></div>`).join('')||'<p class="muted">No expenses this month.</p>'}`)}${card('Budget recommendation',`<p class="muted">Based on the selected month's entered income and expenses. Adjust your savings target in Settings.</p>${table(['Category','Recommended','Planned'],[['Essentials',money(essential),money(essential)],['Discretionary spending',money(allowed),money(discretionary)],['Savings ('+state.budget+'%)',money(target),money(net)]])}<p>${budgetIncome<=0?'Add income to receive a meaningful budget recommendation.':essential+target>budgetIncome?'Your essential expenses and savings target exceed income. Consider reducing obligations or adjusting your savings target.':discretionary>allowed?'Reduce discretionary spending by '+money(discretionary-allowed)+' to reach your savings target.':'Your entered spending fits your savings target. You have '+money(allowed-discretionary)+' of additional discretionary room.'}</p>`)}${card('Financial projections',`<div class="formgrid"><label>Forecast horizon<select id="horizon">${[3,6,12,24,60,120].map(n=>`<option value="${n}" ${n===state.projection?'selected':''}>${n} months</option>`).join('')}</select></label></div><p class="muted">Includes all dated entries and recurring series. No assumed investment returns or inflation.</p><div class="metric ${forecast.at(-1).b<0?'red':'green'}">${money(forecast.at(-1).b)}</div>${forecastChart(now,forecast)}${forecast.some(f=>f.b<0)?'<p class="red">Warning: a projected month-end balance is negative.</p>':''}${table(['Month','Income','Expenses','Ending balance'],forecast.map(f=>[f.m,money(f.income),money(f.expense),`<span class="${f.b<0?'red':'green'}">${money(f.b)}</span>`]))}`)}`
+  return `<div class="grid">${metric('Balance as of today',money(now),now<0?'red':'')}${metric('Income this month to date',money(actual.income),'green')}${metric('Expenses this month to date',money(actual.expense),'red')}${metric('Month-end forecast',money(balance(monthEnd(today().slice(0,7)))))}</div>${card(edit?.key==='transactions'?'Edit transaction / series':'Add income or expense',form('transactions',select('Type','type',['Expense','Income'],x.type||'Expense')+number('Amount (CAD)','amount',x.amount??'')+field('Date','date',x.date||today(),'date','required')+select('Category','category',cats,x.category||'Other')+field('Description (optional)','title',x.title||'')+select('Repeat','repeat',['Once','Weekly','Biweekly','Monthly','Yearly'],x.repeat||'Once')+field('End date (optional)','end',x.end||'','date'))+'<p class="muted">Recurring entries automatically appear in projections. Income and expenses affect your balance automatically on their scheduled dates. Editing a recurring entry changes its entire series; to change a future payment, end the old series and add a new one.</p>')}${card('Transaction register',`<div class="filterbar">${field('From date','txFrom',txFrom,'date')}${field('To date','txTo',txTo,'date')}${select('Category','txCategory',['All',...new Set([...cats,...state.transactions.map(a=>a.category)])],txCategory)}<button class="secondary" data-clear-tx>Clear filters</button></div>${transactionRows()}`)}${card('Monthly breakdown',`<div class="formgrid">${field('Select month','financeMonth',month,'month')}</div><div class="grid" style="margin-top:12px">${metric('Planned income',money(t.income))}${metric('Planned expenses',money(t.expense))}${metric('Planned surplus',money(net),net<0?'red':'green')}</div>${table(['Date','Description','Amount'],t.list.sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(a.title),money(signed(a))]))}<h3>Spending by category</h3>${cats.map(c=>({c,v:sum(t.list.filter(a=>a.type==='Expense'&&a.category===c).map(a=>a.amount))})).filter(a=>a.v>0).sort((a,b)=>b.v-a.v).map(a=>`<div class="row"><span>${a.c}</span><strong>${money(a.v)}</strong></div><div class="bar"><div style="width:${a.v/(t.expense||1)*100}%"></div></div>`).join('')||'<p class="muted">No expenses this month.</p>'}`)}${card('Budget recommendation',`<p class="muted">Based on the selected month's entered income and expenses. Adjust your savings target in Settings.</p>${table(['Category','Recommended','Planned'],[['Essentials',money(essential),money(essential)],['Discretionary spending',money(allowed),money(discretionary)],['Savings ('+state.budget+'%)',money(target),money(net)]])}<p>${budgetIncome<=0?'Add income to receive a meaningful budget recommendation.':essential+target>budgetIncome?'Your essential expenses and savings target exceed income. Consider reducing obligations or adjusting your savings target.':discretionary>allowed?'Reduce discretionary spending by '+money(discretionary-allowed)+' to reach your savings target.':'Your entered spending fits your savings target. You have '+money(allowed-discretionary)+' of additional discretionary room.'}</p>`)}${card('Financial projections',`<div class="formgrid"><label>Forecast horizon<select id="horizon">${[3,6,12,24,60,120].map(n=>`<option value="${n}" ${n===state.projection?'selected':''}>${n} months</option>`).join('')}</select></label></div><p class="muted">Includes all dated entries and recurring series. No assumed investment returns or inflation.</p><div class="metric ${forecast.at(-1).b<0?'red':'green'}">${money(forecast.at(-1).b)}</div>${forecastChart(now,forecast)}${forecast.some(f=>f.b<0)?'<p class="red">Warning: a projected month-end balance is negative.</p>':''}${table(['Month','Income','Expenses','Ending balance'],forecast.map(f=>[f.m,money(f.income),money(f.expense),`<span class="${f.b<0?'red':'green'}">${money(f.b)}</span>`]))}`)}`
 }
 function forecastChart(now,forecast){
   const values=[{
@@ -1523,7 +1503,7 @@ function links(){
   return card('Add bookmark',form('links',field('Name','title',x.title||'','text','required')+field('Website URL','url',x.url||'','url','required')+field('Category','category',x.category||'General')))+card('Your links',`<div class="filterbar">${field('Search links','linkQuery',linkQuery,'search')}${select('Category','linkCategory',['All',...new Set(state.links.map(a=>a.category).filter(Boolean))],linkCategory)}<button class="secondary" data-clear-links>Clear filters</button></div><div id="linkRows">${linkRows()}</div>`)
 }
 function settings(){
-  return card('Preferences',`<form id="settingsForm"><div class="formgrid">${number('Opening balance (CAD)','opening',state.opening,false,true)}${number('Savings target (%)','budget',state.budget)}${select('Appearance','theme',['light','dark'],state.theme)}</div><p class="muted">Opening balance means your balance immediately before the earliest transaction you enter. Only confirmed payments and income affect your current balance; scheduled entries remain in forecasts.</p><button>Save preferences</button></form>`)+card('Data and backups',`<p>Your data is saved in this browser only. Export backups before moving to a new device or clearing browser data.</p><div class="actions"><button id="export">Export JSON backup</button><button class="secondary" id="csv">Export finance CSV</button><button class="secondary" id="import">Import JSON backup</button><button class="danger" id="reset">Delete all data</button></div><input id="importFile" type="file" accept="application/json,.json" hidden style="display:none">`)+card('About this prototype','<p>Single-file local HTML application. No login, Firebase, external APIs or network requests. Data does not sync between devices. Local file storage behavior varies by browser.</p>')
+  return card('Preferences',`<form id="settingsForm"><div class="formgrid">${number('Opening balance (CAD)','opening',state.opening,false,true)}${number('Savings target (%)','budget',state.budget)}${select('Appearance','theme',['light','dark'],state.theme)}</div><p class="muted">Opening balance means your balance immediately before the earliest transaction you enter. All transactions dated on or before today are added to or deducted from this balance automatically; future entries are included only in forecasts.</p><button>Save preferences</button></form>`)+card('Data and backups',`<p>Your data is saved in this browser only. Export backups before moving to a new device or clearing browser data.</p><div class="actions"><button id="export">Export JSON backup</button><button class="secondary" id="csv">Export finance CSV</button><button class="secondary" id="import">Import JSON backup</button><button class="danger" id="reset">Delete all data</button></div><input id="importFile" type="file" accept="application/json,.json" hidden style="display:none">`)+card('About this prototype','<p>Single-file local HTML application. No login, Firebase, external APIs or network requests. Data does not sync between devices. Local file storage behavior varies by browser.</p>')
 }
 function download(name,body,type){
   const u=URL.createObjectURL(new Blob([body],{
@@ -1619,13 +1599,6 @@ function bind(){
   root.onclick=e=>{
     const b=e.target.closest('button');
     if(!b)return;
-    if(b.dataset.paymentId){
-      const t=state.transactions.find(x=>String(x.id)===b.dataset.paymentId),d=b.dataset.paymentDate;
-      if(!t||!occurrences(today()).some(x=>x.id===t.id&&x.date===d))return;
-      t.confirmedDates={...(t.confirmedDates||{})};
-      if(t.confirmedDates[d]===true)delete t.confirmedDates[d];else t.confirmedDates[d]=true;
-      save();render();return;
-    }
     if(b.dataset.go)go(b.dataset.go);
     if(b.dataset.edit){
       const [key,id]=b.dataset.edit.split(':');
@@ -1709,14 +1682,6 @@ function bind(){
         if(key==='links'&&!safeURL(a.url))throw Error('Enter an HTTP or HTTPS website URL.');
         if(edit?.key===key){
           a.id=edit.id;
-          if(key==='transactions'){
-            const previous=state.transactions.find(x=>x.id===a.id);
-            if(previous?.confirmedDates){
-              if(previous.date!==a.date||previous.repeat!==a.repeat||previous.amount!==a.amount||previous.type!==a.type){
-                if(Object.values(previous.confirmedDates).some(v=>v===true)&&!confirm('Changing the schedule, amount or type will clear payment confirmations for this series. Continue?'))return;
-              }else a.confirmedDates=previous.confirmedDates;
-            }
-          }
           state[key]=state[key].map(x=>x.id===a.id?a:x)
         } else{
           a.id=uid();
