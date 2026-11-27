@@ -1531,7 +1531,7 @@ function monthWeekHTML(days,month){
 
 let eventSearch={query:'',from:'',to:'',rows:[],status:'',seq:0,session:-1};
 function resetEventSearch(){eventSearch={query:'',from:'',to:'',rows:[],status:'',seq:eventSearch.seq+1,session:-1};}
-function eventSearchDates(){const d=easternToday();return {from:eventSearch.from||addMonths(d,-12),to:eventSearch.to||addMonths(d,12)};}
+function eventSearchDates(from=eventSearch.from,to=eventSearch.to){const d=easternToday();return {from:from||d,to:to||addMonths(d,36)};}
 function searchEventMatch(a,q){return [a.title,a.calendar,a.notes].some(v=>String(v||'').toLowerCase().includes(q.toLowerCase()));}
 function searchGoogleRow(e,cal){
  const all=!!e.start.date,s=all?{date:e.start.date,time:''}:easternParts(new Date(e.start.dateTime));
@@ -1551,14 +1551,13 @@ function eventSearchResults(){
  return '<p class="muted" role="status">'+esc(eventSearch.status||'Enter a search term and select Search.')+'</p>'+ (rows.length?table(['Event','Date & time (Toronto)','Calendar','Location'],rows.map(a=>[esc(a.title),esc(searchEventWhen(a)),esc(a.calendar),esc(a.notes||'—')])):'');
 }
 function eventSearchCard(){
- const d=eventSearchDates();
- return card('Search events','<form id="eventSearchForm"><div class="formgrid">'+field('Search events','eventQuery',eventSearch.query,'search','required')+field('From','eventFrom',d.from,'date','required')+field('To','eventTo',d.to,'date','required')+'</div><div class="actions"><button type="submit">Search</button><button type="button" class="secondary" id="eventSearchClear">Clear</button></div></form><p class="muted">Searches all connected Google calendars and dashboard events in the selected date range, including recurring occurrences. Default: one year before and after today.</p><div id="eventSearchResults">'+eventSearchResults()+'</div>');
+ return card('Search events','<form id="eventSearchForm"><div class="formgrid">'+field('Search events','eventQuery',eventSearch.query,'search','required')+field('From (optional)','eventFrom',eventSearch.from,'date')+field('To (optional)','eventTo',eventSearch.to,'date')+'</div><div class="actions"><button type="submit">Search</button><button type="button" class="secondary" id="eventSearchClear">Clear</button></div></form><p class="muted">Searches all connected Google calendars and dashboard events in the selected date range, including recurring occurrences. Leave dates blank to search from today through the next three years.</p><div id="eventSearchResults">'+eventSearchResults()+'</div>');
 }
 async function runEventSearch(form){
- const f=new FormData(form),q=String(f.get('eventQuery')||'').trim(),from=String(f.get('eventFrom')||''),to=String(f.get('eventTo')||'');
- if(!q||!from||!to||from>to){notify('Enter a search term and a valid date range.');return;}
+ const f=new FormData(form),q=String(f.get('eventQuery')||'').trim(),rawFrom=String(f.get('eventFrom')||''),rawTo=String(f.get('eventTo')||''),{from,to}=eventSearchDates(rawFrom,rawTo);
+ if(!q||from>to){notify('Enter a search term and a valid date range.');return;}
  const seq=++eventSearch.seq,session=googleSession,owner=googleOwner;
- Object.assign(eventSearch,{query:q,from,to,rows:searchLocalEvents(q,from,to),status:'Searching…',session});
+ Object.assign(eventSearch,{query:q,from:rawFrom,to:rawTo,rows:searchLocalEvents(q,from,to),status:'Searching…',session});
  const show=()=>{if(page==='Calendar'&&$('eventSearchResults'))$('eventSearchResults').innerHTML=eventSearchResults();};
  show();
  if(!googleToken){eventSearch.status=eventSearch.rows.length+' dashboard matches. Connect Google Calendar to search Google events.';show();return;}
