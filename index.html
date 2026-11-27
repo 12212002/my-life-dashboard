@@ -822,7 +822,7 @@ const $=id=>document.getElementById(id), esc=v=>String(v??'').replace(/[&<>"']/g
   style:'currency',currency:'CAD'
 }).format(n), localDate=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`, today=()=>localDate(new Date()), dateObj=s=>new Date(s+'T12:00:00'), uid=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2), num=v=>Number(v), sum=a=>a.reduce((s,x)=>s+x,0);
 const defaults=()=>({
-  transactions:[],university:[],semesters:[],courses:[],work:[],calendar:[],vehicle:[],knowledge:[],links:[],opening:0,theme:'light',budget:20,projection:12
+  transactions:[],university:[],semesters:[],courses:[],work:[],calendar:[],vehicle:[],knowledge:[],links:[],workspace:null,opening:0,theme:'light',budget:20,projection:12
 });
 let state=defaults(),storageOK=true,cloudReady=false,cloudSave=null;
 let page='Home',edit=null,month=today().slice(0,7),calMonth=today().slice(0,7);
@@ -849,7 +849,7 @@ function migrateUniversity(){
   if(!state.courses.some(c=>c.id===courseFilter&&c.semesterId===semesterId))courseFilter=''
 }
 migrateUniversity();
-const sections=[['Home','⌂','Your daily overview'],['University','🎓','Grades, exams & assignments'],['Work','▤','Tasks & follow-ups'],['Calendar','▦','Schedule & deadlines'],['Finances','$','Income, expenses & projections'],['Vehicle','🚘','Maintenance & mileage'],['Knowledge Base','▧','Notes & procedures'],['Quick Links','↗','Frequently visited websites'],['Settings','⚙','Preferences & appearance']];
+const sections=[['Home','⌂','Your daily overview'],['University','🎓','Grades, exams & assignments'],['Work','▤','Tasks & follow-ups'],['Calendar','▦','Schedule & deadlines'],['Finances','$','Income, expenses & projections'],['Vehicle','🚘','Maintenance & mileage'],['Workspace','▧','Notes, links & custom tools'],['Settings','⚙','Preferences & appearance']];
 function save(){
   if(!cloudReady || !cloudSave){notify('Cloud not connected. Changes are not saved.');return;}
   cloudSave(JSON.parse(JSON.stringify(state)));
@@ -875,7 +875,7 @@ function render(){
   $('nav').innerHTML=sections.map(([n,i])=>`<button data-page="${esc(n)}" class="${page===n?'active':''}">${i} &nbsp;${n}</button>`).join('');
   $('nav').querySelectorAll('button').forEach(b=>b.onclick=()=>go(b.dataset.page));
   $('content').innerHTML=(!storageOK?'<p class="notice">Browser storage is unavailable. Export a backup before closing.</p>':'')+({
-    Home:home,Finances:finance,University:university,Work:work,Calendar:calendar,Vehicle:vehicle,'Knowledge Base':knowledge,'Quick Links':links,Settings:settings
+    Home:home,Finances:finance,University:university,Work:work,Calendar:calendar,Vehicle:vehicle,Workspace:workspace,Settings:settings
   }[page])();
   bind()
 }
@@ -1487,6 +1487,28 @@ function vehicle(){
   const x=current('vehicle');
   return card('Maintenance record',form('vehicle',field('Service / repair','title',x.title||'','text','required')+field('Date','date',x.date||today(),'date','required')+number('Odometer (km)','mileage',x.mileage??'',true)+number('Cost (CAD)','amount',x.amount??'')+field('Next service date','next',x.next||'','date')+field('Notes','notes',x.notes||'')))+`<div class="grid">${metric('Latest recorded mileage',state.vehicle.length?Math.max(...state.vehicle.map(a=>a.mileage)).toLocaleString()+' km':'—')}${metric('Total recorded service costs',money(sum(state.vehicle.map(a=>a.amount))))}</div>`+card('Service history',table(['Date','Service','Mileage','Cost','Next service','Notes','Actions'],state.vehicle.map(a=>[esc(a.date),esc(a.title),a.mileage.toLocaleString()+' km',money(a.amount),esc(a.next||'—'),esc(a.notes),controls('vehicle',a.id)])))
 }
+function workspace(){
+  return '<iframe id="workspaceFrame" title="Workspace" src="workspace.html" style="width:100%;height:calc(100vh - 130px);min-height:560px;border:0;display:block;background:var(--bg)" allow="clipboard-write"></iframe>';
+}
+window.dashboardWorkspace={
+  read(sender){
+    if(!cloudReady||page!=='Workspace'||$('workspaceFrame')?.contentWindow!==sender)return null;
+    const pages=[{id:'general',name:'General',heading:'General',description:'Your notes, links and custom tools.',elements:[
+      {id:'legacy-links',type:'links',label:'Quick Links',links:state.links.map(l=>({title:l.title,url:l.url,category:l.category||'General'})),pos:{x:0,y:0,w:6,h:18}},
+      {id:'legacy-notes',type:'knowledge',label:'Knowledge Base',notes:state.knowledge.map(n=>({title:n.title,category:n.category||'General',text:n.notes||''})),pos:{x:6,y:0,w:6,h:18}}
+    ]}];
+    return JSON.parse(JSON.stringify({storage:state.workspace||{},pages,dark:state.theme==='dark'}));
+  },
+  write(sender,key,value){
+    if(!cloudReady||page!=='Workspace'||$('workspaceFrame')?.contentWindow!==sender)throw Error('Workspace is no longer connected. Reopen it to continue.');
+    if(typeof key!=='string'||!/^workspaceFinalTest\.(?:pages|input\..+|check\..+)$/.test(key)||value!==null&&typeof value!=='string')throw Error('Invalid Workspace data.');
+    const next={...(state.workspace||{})};
+    if(value===null)delete next[key];else next[key]=value;
+    if(JSON.stringify(next)===JSON.stringify(state.workspace))return;
+    state.workspace=next;save();
+  }
+};
+
 function knowledge(){
   const x=current('knowledge');
   return card('Add or edit note',form('knowledge',field('Title','title',x.title||'','text','required')+field('Category','category',x.category||'General')+`<label style="grid-column:1/-1">Note<textarea name="notes" required>${esc(x.notes||'')}</textarea></label>`))+card('Notes',`<input id="noteSearch" placeholder="Search notes…"><div id="noteList">${notesHTML('')}</div>`)
