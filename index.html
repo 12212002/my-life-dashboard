@@ -783,6 +783,14 @@ body.dark .cal-scroll{--calendar-grid:#3c4043;--calendar-bg:#202124;--calendar-t
 .cal-scroll .now-line:before{background:#ea4335;width:10px;height:10px;top:-4px;left:-5px}
 .cal-scroll .week-day.is-today{background-color:var(--calendar-bg)}
 
+
+.cal-scroll .week-banner-grid{grid-column:1/-1;display:grid;grid-template-columns:58px repeat(7,minmax(94px,1fr));min-height:42px;border-bottom:1px solid var(--calendar-grid);padding:2px 0;align-content:start;position:relative}
+.cal-scroll .week-banner-cell{border-right:1px solid var(--calendar-grid);min-width:0}
+.cal-scroll .week-banner-label{font-size:11px;color:var(--calendar-muted);padding:4px;border-right:1px solid var(--calendar-grid)}
+.cal-scroll .week-banner{z-index:2;align-self:start;margin:2px 3px 0;padding:3px 7px;border:0;border-radius:4px;min-width:0;height:21px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;font:600 12px Arial,Helvetica,sans-serif;line-height:15px}
+.cal-scroll .week-banner.continues-before{clip-path:polygon(7px 0,100% 0,100% 100%,7px 100%,0 50%);padding-left:11px}
+.cal-scroll .week-banner.continues-after{clip-path:polygon(0 0,calc(100% - 7px) 0,100% 50%,calc(100% - 7px) 100%,0 100%);padding-right:11px}
+.cal-scroll .week-banner.continues-before.continues-after{clip-path:polygon(7px 0,calc(100% - 7px) 0,100% 50%,calc(100% - 7px) 100%,7px 100%,0 50%)}
 </style>
 </head>
 <body>
@@ -1462,6 +1470,40 @@ function clockLine(){
   if(line)line.style.top=(h*60+m)+'px';
   if(page==='Calendar'&&document.querySelector('[data-render-day]')?.dataset.renderDay!==easternToday())render();
 }
+function bannerEvent(a){
+  if(!a.time)return true;
+  const s=a.raw?.start?.dateTime,e=a.raw?.end?.dateTime;
+  return !!(s&&e&&Number.isFinite(Date.parse(s))&&Date.parse(e)-Date.parse(s)>=86400000);
+}
+function weekBannerLayout(days,itemsForDay){
+  const groups=new Map();
+  days.forEach((day,i)=>itemsForDay(day).filter(bannerEvent).forEach((a,j)=>{
+    const key=a.calendarId?JSON.stringify([a.calendarId,a.id,a.raw?.start?.dateTime||a.raw?.start?.date]):JSON.stringify([a.kind,a.id||j,day]);
+    if(!groups.has(key))groups.set(key,{a,first:i,last:i});
+    else groups.get(key).last=i;
+  }));
+  const rows=[];
+  const bars=[...groups.values()].sort((a,b)=>a.first-b.first||(b.last-b.first)-(a.last-a.first)||a.a.title.localeCompare(b.a.title));
+  for(const b of bars){
+    let lane=rows.findIndex(row=>row.every(other=>other.last<b.first||other.first>b.last));
+    if(lane<0){lane=rows.length;rows.push([]);}
+    b.lane=lane;rows[lane].push(b);
+    const raw=b.a.raw;
+    const start=raw?.start?.date||(raw?.start?.dateTime?easternParts(new Date(raw.start.dateTime)).date:b.a.date);
+    let end=raw?.end?.date?shiftDay(raw.end.date,-1):b.a.date;
+    if(raw?.end?.dateTime){const p=easternParts(new Date(raw.end.dateTime));end=p.time==='00:00'?shiftDay(p.date,-1):p.date;}
+    b.before=start<days[0];b.after=end>days[days.length-1];
+  }
+  return {bars,lanes:Math.max(1,rows.length)};
+}
+function weekBannerHTML(days){
+  const {bars,lanes}=weekBannerLayout(days,calItems);
+  const backgrounds=days.map((day,i)=>'<div class="week-banner-cell '+(day===easternToday()?'is-today':'')+'" style="grid-column:'+(i+2)+';grid-row:1 / '+(lanes+1)+'"></div>').join('');
+  return '<div class="week-banner-grid" style="grid-template-rows:repeat('+lanes+',24px)"><div class="week-banner-label" style="grid-column:1;grid-row:1 / '+(lanes+1)+'">All day</div>'+backgrounds+bars.map(b=>{
+    const event=b.a,googleIndex=event.calendarId?googleEvents.indexOf(event):-1,tag=googleIndex>=0?'button':'div';
+    return '<'+tag+(googleIndex>=0?' type="button" data-google-details="'+googleIndex+'"':'')+' class="week-banner '+(b.before?'continues-before ':'')+(b.after?'continues-after':'')+'" style="grid-column:'+(b.first+2)+' / '+(b.last+3)+';grid-row:'+(b.lane+1)+';'+eventColorStyle(event,false)+'" title="'+esc(event.title)+'">'+esc(event.title)+'</'+tag+'>';
+  }).join('')+'</div>';
+}
 function calendar(){
   const x=current('calendar'),d=dateObj(calAnchor),first=calAnchor.slice(0,7)+'-01',start=weekStart(calView==='Month'?first:calAnchor),days=calView==='Month'?Array.from({
     length:Math.ceil((dateObj(first).getDay()+Number(monthEnd(first.slice(0,7)).slice(-2)))/7)*7
@@ -1479,7 +1521,7 @@ function calendar(){
   if(calView==='Month'){
     grid=`<div class="month-grid">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(v=>`<div class="weekday">${v}</div>`).join('')}${days.map(day=>`<div class="${day===easternToday()?'is-today':''} ${day.slice(0,7)!==first.slice(0,7)?'outside':''}"><span class="cal-date">${Number(day.slice(-2))}</span>${calItems(day).map(a=>calEvent(a)).join('')}</div>`).join('')}</div>`
   } else{
-    grid=`<div class="week-grid"><div class="week-head"></div>${days.map(day=>`<div class="week-head ${day===easternToday()?'is-today':''}">${dateObj(day).toLocaleDateString('en-CA',{weekday:'short'})}<br><span class="cal-date">${Number(day.slice(-2))}</span></div>`).join('')}<div class="week-all muted">All day</div>${days.map(day=>`<div class="week-all ${day===easternToday()?'is-today':''}">${calItems(day).filter(a=>!a.time).map(a=>calEvent(a)).join('')}</div>`).join('')}<div class="week-hours">${Array.from({length:24},(_,h)=>`<span class="hour-label" style="top:${h*60}px">${h%12||12} ${h<12?'AM':'PM'}</span>`).join('')}</div>${days.map(day=>`<div class="week-day ${day===easternToday()?'is-today':''}">${layoutWeekEvents(calItems(day).filter(a=>a.time)).map(item=>calEvent(item.a,'week-event',item)).join('')}${day===easternToday()?'<div class="now-line"></div>':''}</div>`).join('')}</div>`
+    grid=`<div class="week-grid"><div class="week-head"></div>${days.map(day=>`<div class="week-head ${day===easternToday()?'is-today':''}">${dateObj(day).toLocaleDateString('en-CA',{weekday:'short'})}<br><span class="cal-date">${Number(day.slice(-2))}</span></div>`).join('')}${weekBannerHTML(days)}<div class="week-hours">${Array.from({length:24},(_,h)=>`<span class="hour-label" style="top:${h*60}px">${h%12||12} ${h<12?'AM':'PM'}</span>`).join('')}</div>${days.map(day=>`<div class="week-day ${day===easternToday()?'is-today':''}">${layoutWeekEvents(calItems(day).filter(a=>a.time&&!bannerEvent(a))).map(item=>calEvent(item.a,'week-event',item)).join('')}${day===easternToday()?'<div class="now-line"></div>':''}</div>`).join('')}</div>`
   }
   return card('Schedule',`<div data-render-day="${easternToday()}" class="cal-toolbar"><div class="row"><button class="secondary" data-cal="-1">←</button><button class="secondary" data-cal="today">Today</button><button class="secondary" data-cal="1">→</button><strong>${title}</strong></div><div class="row"><button class="${calView==='Month'?'':'secondary'}" data-cal-view="Month">Month</button><button class="${calView==='Week'?'':'secondary'}" data-cal-view="Week">Week</button></div></div><div class="cal-scroll">${grid}</div><p class="muted">Google Calendar colours · Eastern time (Toronto) · Click a Google event for details.</p>`)+googlePanel()+card(edit?.key==='calendar'?'Edit event':'Add event',form('calendar',field('Event','title',x.title||'','text','required')+field('Date','date',x.date||easternToday(),'date','required')+field('Time','time',x.time||'','time')+field('Location / notes','notes',x.notes||'')))+card('Events',table(['Date','Time','Event','Notes','Actions'],[...state.calendar].sort((a,b)=>a.date.localeCompare(b.date)).map(a=>[esc(a.date),esc(timeLabel(a.time)||'—'),esc(a.title),esc(a.notes),controls('calendar',a.id)])))
 }
