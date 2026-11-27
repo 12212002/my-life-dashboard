@@ -1070,7 +1070,7 @@ function university(){
       p+=c.finalWeight*c.finalGrade/100
     }
     return [esc(c.title),w+'%',w?(p/w*100).toFixed(2)+'%':'—',p.toFixed(2)+'%',controls('courses',c.id)]
-  })))+(courses.length?passingCards(courses,assessments):'')+(courses.length?card('Add or edit assessment',form('university',idSelect('Course','courseId',courses,x.courseId||courseFilter||'','Select course')+field('Test / assignment name','title',x.title||'','text','required')+field('Due date','date',x.date||'','date')+number('Weight (%)','weight',x.weight??'')+field('Grade (%) — optional','grade',x.grade??'','text','inputmode="decimal"')))+card('Assessments',`<label>Filter by course<select name="courseFilter"><option value="">All courses</option>${courses.map(c=>`<option value="${esc(c.id)}" ${c.id===courseFilter?'selected':''}>${esc(c.title)}</option>`).join('')}</select></label>`+table(['Course','Assessment','Due','Weight','Grade','Actions'],assessments.filter(a=>!courseFilter||a.courseId===courseFilter).map(a=>[esc(a.course),esc(a.title),esc(a.date||'—'),a.weight+'%',a.grade===null?'—':a.grade+'%',controls('university',a.id)]))):'<p class="notice">Add your courses first, then select one when adding an assessment.</p>'))
+  })))+(courses.length?passingCards(courses,assessments):'')+(courses.length?card('Add or edit assessment',form('university',idSelect('Course','courseId',courses,x.courseId||courseFilter||'','Select course')+field('Test / assignment name','title',x.title||'','text','required')+field('Due date (optional)','date',x.date||'','date')+number('Weight (%)','weight',x.weight??'')+field('Grade (%) — optional','grade',x.grade??'','text','inputmode="decimal"')))+card('Assessments',`<label>Filter by course<select name="courseFilter"><option value="">All courses</option>${courses.map(c=>`<option value="${esc(c.id)}" ${c.id===courseFilter?'selected':''}>${esc(c.title)}</option>`).join('')}</select></label>`+table(['Course','Assessment','Due','Weight','Grade','Actions'],assessments.filter(a=>!courseFilter||a.courseId===courseFilter).map(a=>[esc(a.course),esc(a.title),esc(a.date||'—'),a.weight+'%',a.grade===null?'—':a.grade+'%',controls('university',a.id)]))):'<p class="notice">Add your courses first, then select one when adding an assessment.</p>'))
 }
 let workFilter='All', calView='Month', calAnchor=today(), txFrom='',txTo='',txCategory='All',linkCategory='All',linkQuery='';
 function work(){
@@ -1278,8 +1278,6 @@ async function googleAction(action,index){
 function calItems(day){
   return [...googleEvents.filter(a=>googleVisible.has(a.calendarId)),...state.calendar.map(a=>({
     ...a,kind:'event'
-  })),...state.university.map(a=>({
-    ...a,kind:'school',time:''
   })),...state.work.filter(a=>a.status!=='Done').map(a=>({
     ...a,kind:'work',time:''
   }))].filter(a=>a.date===day).sort((a,b)=>(a.time||'').localeCompare(b.time||''))
@@ -1539,7 +1537,7 @@ function searchGoogleRow(e,cal){
  return {title:e.summary||'(Untitled)',date:s.date,time:s.time,endDate:end.date,endTime:end.time,calendar:cal.summary,notes:e.location||'',all,link:e.htmlLink||''};
 }
 function searchLocalEvents(q,from,to){
- return [...state.calendar.map(a=>({...a,calendar:'Dashboard events'})),...state.university.map(a=>({...a,time:'',calendar:'University'})),...state.work.filter(a=>a.status!=='Done').map(a=>({...a,time:'',calendar:'Work'}))].filter(a=>a.date&&a.date>=from&&a.date<=to&&searchEventMatch(a,q)).map(a=>({...a,endDate:a.date,all:!a.time}));
+ return [...state.calendar.map(a=>({...a,calendar:'Dashboard events'})),...state.work.filter(a=>a.status!=='Done').map(a=>({...a,time:'',calendar:'Work'}))].filter(a=>a.date&&a.date>=from&&a.date<=to&&searchEventMatch(a,q)).map(a=>({...a,endDate:a.date,all:!a.time}));
 }
 function searchEventWhen(a){
  const date=s=>dateObj(s).toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
