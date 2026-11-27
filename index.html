@@ -889,6 +889,8 @@ body:not(.authenticated)>aside,body:not(.authenticated)>main{display:none}
 
 /* Match neutral input and dropdown hover borders to the MyLife leaf. */
 @media (hover:hover){input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not([type=hidden]):not(:disabled):hover,select:not(:disabled):hover,textarea:not(:disabled):hover,.tx-filter-dropdown summary:hover{border-color:#ff8a3d!important}}
+
+#googleEventForm .google-all-day{display:flex;align-items:center;justify-content:flex-start;gap:9px;margin:12px 0;cursor:pointer;line-height:1.4}#googleEventForm .google-all-day input{width:16px;height:16px;flex:0 0 16px;margin:0;padding:0;accent-color:var(--accent);cursor:pointer}
 </style>
 <div id="authGate"><div class="login-shell">
 <div class="login-brand"><img src="./mylife-sidebar.svg?v=3" alt="" width="43" height="28"><span>MyLife - Dashboard</span></div>
@@ -1477,7 +1479,7 @@ function googlePanel(){
   const start=x.start?.dateTime?new Date(x.start.dateTime):null,end=x.end?.dateTime?new Date(x.end.dateTime):null;
   const localInput=d=>{const p=easternParts(d);return p.date+'T'+p.time;};
   const isAll=!!x.start?.date;
-  const formHtml=writable.length?'<form id="googleEventForm"><label>Google calendar<select name="calendarId" '+(googleEdit?'disabled':'')+'>'+writable.map(a=>'<option value="'+esc(a.id)+'" '+(a.id===googleEdit?.calendarId?'selected':'')+'>'+esc(a.summary)+'</option>').join('')+'</select></label>'+field('Event title','summary',x.summary||'','text','required')+'<label><input type="checkbox" name="allDay" style="width:auto" '+(isAll?'checked':'')+'> All day (uses date only; end date is inclusive)</label>'+field('Start','start',start?localInput(start):(x.start?.date||today())+'T09:00','datetime-local','required')+field('End','end',end?localInput(end):(x.end?.date?shiftDay(x.end.date,-1):today())+'T10:00','datetime-local','required')+field('Location','location',x.location||'')+'<button type="button" data-google-action="save" '+(googleBusy?'disabled':'')+'>'+(googleEdit?'Save Google event':'Add Google event')+'</button> '+(googleEdit?btn('cancel','Cancel'):'')+'</form>':'<p>No writable calendars.</p>';
+  const formHtml=writable.length?'<form id="googleEventForm"><label>Google calendar<select name="calendarId" '+(googleEdit?'disabled':'')+'>'+writable.map(a=>'<option value="'+esc(a.id)+'" '+(a.id===googleEdit?.calendarId?'selected':'')+'>'+esc(a.summary)+'</option>').join('')+'</select></label>'+field('Event title','summary',x.summary||'','text','required')+'<label class="google-all-day"><input type="checkbox" name="allDay" '+(isAll?'checked':'')+'><span>All day (uses date only; end date is inclusive)</span></label>'+field('Start','start',start?localInput(start):(x.start?.date||today())+'T09:00','datetime-local','required')+field('End','end',end?localInput(end):(x.end?.date?shiftDay(x.end.date,-1):today())+'T10:00','datetime-local','required')+field('Location','location',x.location||'')+'<button type="button" data-google-action="save" '+(googleBusy?'disabled':'')+'>'+(googleEdit?'Save Google event':'Add Google event')+'</button> '+(googleEdit?btn('cancel','Cancel'):'')+'</form>':'<p>No writable calendars.</p>';
   return card('Google Calendar','<p class="muted">'+esc(googleMessage)+'</p><div class="row">'+btn('refresh','Refresh')+btn('disconnect','Disconnect')+btn('connect','Reconnect')+'</div>'+calendars)+card(googleEdit?'Edit Google event':'Add Google event',formHtml);
 }
 async function googleAction(action,index){
