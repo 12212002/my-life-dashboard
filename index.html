@@ -1069,7 +1069,7 @@ async function refreshHomeAgenda(){
 function home(){
   const t=totals(today().slice(0,7),today());
   const upcoming=homeUpcoming();
-  return `<div class="grid">${metric('Estimated balance',money(balance(today())))}${metric('This month net',money(t.income-t.expense))}${metric('Open work tasks',state.work.filter(x=>x.status!=='Done').length)}${metric('Upcoming items',upcoming.length)}</div>${card('Coming up',homeAgendaHTML(upcoming))}<div class="grid">${sections.slice(1).map(([n,i,d])=>`<button class="card tile" data-go="${n}"><span>${i}</span><strong>${n}</strong><small>${d}</small></button>`).join('')}</div>`
+  return `<div class="grid">${metric('Estimated balance',money(balance(today())))}${metric('This month net',money(t.income-t.expense))}${metric('Open work tasks',state.work.filter(x=>x.status!=='Done').length)}${metric('Upcoming items',upcoming.length)}</div><div class="grid">${sections.filter(([n])=>['University','Work','Calendar','Finances','Workspace'].includes(n)).map(([n,i,d])=>`<button class="card tile" data-go="${n}"><span>${i}</span><strong>${n}</strong><small>${d}</small></button>`).join('')}</div>${card('Coming up',homeAgendaHTML(upcoming))}<div class="grid">${sections.filter(([n])=>['Vehicle','Settings'].includes(n)).map(([n,i,d])=>`<button class="card tile" data-go="${n}"><span>${i}</span><strong>${n}</strong><small>${d}</small></button>`).join('')}</div>`
 }
 const cats=['Food','Paycheck','Other Income','Car Payments','Car Insurance','Gas','Shopping','Entertainment','Subscriptions','Other'];
 const incomeCats=['Paycheck','Other Income'];
