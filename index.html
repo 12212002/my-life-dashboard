@@ -1807,9 +1807,9 @@ function links(){
   const x=current('links');
   return card('Add bookmark',form('links',field('Name','title',x.title||'','text','required')+field('Website URL','url',x.url||'','url','required')+field('Category','category',x.category||'General')))+card('Your links',`<div class="filterbar">${field('Search links','linkQuery',linkQuery,'search')}${select('Category','linkCategory',['All',...new Set(state.links.map(a=>a.category).filter(Boolean))],linkCategory)}<button class="secondary" data-clear-links>Clear filters</button></div><div id="linkRows">${linkRows()}</div>`)
 }
-let accessAdmin=false,accessAdminLoad=null;
+let accessAdmin=false,accessAdminLoad=null,accessFilter='active';
 function settings(){
-  return (accessAdmin?card('Access Management','<p class="muted">Approve, deny, or revoke access. Revoking preserves data. Delete User Data is available after revocation.</p><div id="accessAdminRows">Loading requests…</div><button type="button" class="secondary" id="refreshAccessAdmin">Refresh requests</button>'):'')+card('Preferences',`<form id="settingsForm"><div class="formgrid">${number('Opening balance (CAD)','opening',state.opening,false,true)}${number('Savings target (%)','budget',state.budget)}${number('Monthly spending budget (CAD)','monthlySpendingBudget',state.monthlySpendingBudget||0)}${select('Appearance','theme',['light','dark'],state.theme)}</div><p class="muted" id="spendingSettingsPreview">${esc(spendingSettingsPreview(state.monthlySpendingBudget))}</p><p class="muted">Opening balance means your balance immediately before the earliest transaction you enter. All transactions dated on or before today are added to or deducted from this balance automatically; future entries are included only in forecasts.</p><button>Save preferences</button></form>`)+card('Data and backups',`<p>Your data is saved in this browser only. Export backups before moving to a new device or clearing browser data.</p><div class="actions"><button id="export">Export JSON backup</button><button class="secondary" id="csv">Export finance CSV</button><button class="secondary" id="import">Import JSON backup</button><button class="action-delete danger" id="reset">Delete all data</button></div><input id="importFile" type="file" accept="application/json,.json" hidden style="display:none">`)+card('About this prototype','<p>Single-file local HTML application. No login, Firebase, external APIs or network requests. Data does not sync between devices. Local file storage behavior varies by browser.</p>')
+  return (accessAdmin?card('Access Management','<p class="muted">Approve, deny, or revoke access. Revoking preserves data. Delete User Data is available after revocation.</p><div class="filterbar"><div><label for="accessUserFilter">Show users</label><select id="accessUserFilter"><option value="active">Active &amp; pending</option><option value="revoked">Revoked access</option><option value="deleted">Deleted users</option><option value="all">All users</option></select></div></div><div id="accessAdminRows">Loading requests…</div><button type="button" class="secondary" id="refreshAccessAdmin">Refresh requests</button>'):'')+card('Preferences',`<form id="settingsForm"><div class="formgrid">${number('Opening balance (CAD)','opening',state.opening,false,true)}${number('Savings target (%)','budget',state.budget)}${number('Monthly spending budget (CAD)','monthlySpendingBudget',state.monthlySpendingBudget||0)}${select('Appearance','theme',['light','dark'],state.theme)}</div><p class="muted" id="spendingSettingsPreview">${esc(spendingSettingsPreview(state.monthlySpendingBudget))}</p><p class="muted">Opening balance means your balance immediately before the earliest transaction you enter. All transactions dated on or before today are added to or deducted from this balance automatically; future entries are included only in forecasts.</p><button>Save preferences</button></form>`)+card('Data and backups',`<p>Your data is saved in this browser only. Export backups before moving to a new device or clearing browser data.</p><div class="actions"><button id="export">Export JSON backup</button><button class="secondary" id="csv">Export finance CSV</button><button class="secondary" id="import">Import JSON backup</button><button class="action-delete danger" id="reset">Delete all data</button></div><input id="importFile" type="file" accept="application/json,.json" hidden style="display:none">`)+card('About this prototype','<p>Single-file local HTML application. No login, Firebase, external APIs or network requests. Data does not sync between devices. Local file storage behavior varies by browser.</p>')
 }
 function download(name,body,type){
   const u=URL.createObjectURL(new Blob([body],{
@@ -2109,7 +2109,7 @@ import { getFirestore, doc, getDocFromServer, setDoc, onSnapshot, collection, ge
 const gate=$('authGate'), message=$('authMessage'), login=$('googleLogin'), status=$('cloudStatus');
 let accessUnsubscribe=null,unsubscribe=null,generation=0,pending=0,failed=false,queue=Promise.resolve(),lastRemote=null;
 function lock(msg){
-  accessAdmin=false;accessAdminLoad=null;$('accessRequestPanel').hidden=true;
+  accessAdmin=false;accessAdminLoad=null;accessFilter='active';$('accessRequestPanel').hidden=true;
   googleDisconnect(false);
   cloudReady=false;cloudSave=null;
   document.body.classList.remove('authenticated');
@@ -2139,7 +2139,7 @@ try{
     const status=record?.status;
     $('accessRequestPanel').hidden=false;
     $('requestAccess').hidden=!!record;
-    message.textContent=!record?'Your account is not approved. Request access from the dashboard owner.':status==='pending'?'Request pending. The owner must approve your account.':status==='denied'?'Your access request was denied.':status==='revoked'?'Your access has been revoked.':'Access approved. Select Check access status to continue.';
+    message.textContent=!record?'Your account is not approved. Request access from the dashboard owner.':status==='pending'?'Request pending. The owner must approve your account.':status==='denied'?'Your access request was denied.':status==='deleted'?'Your access was removed and your dashboard data was deleted.':status==='revoked'?'Your access has been revoked.':'Access approved. Select Check access status to continue.';
     $('requestAccess').onclick=async()=>{
       const session=generation;
       $('requestAccess').disabled=true;
@@ -2153,23 +2153,24 @@ try{
     accessAdminLoad=async()=>{
       const panel=$('accessAdminRows');if(!panel||session!==generation||!accessAdmin)return;
       $('refreshAccessAdmin').onclick=accessAdminLoad;
+      const filter=$('accessUserFilter');filter.value=accessFilter;filter.onchange=()=>{accessFilter=filter.value;accessAdminLoad();};
       try{
         const result=await getDocsFromServer(collection(db,'accessRequests'));
         if(session!==generation||panel!==$('accessAdminRows'))return;
         panel.replaceChildren();
-        const ordered=result.docs.sort((a,b)=>(a.data().status==='pending'?0:1)-(b.data().status==='pending'?0:1)||String(a.data().email).localeCompare(String(b.data().email)));
-        if(!ordered.length){panel.textContent='No access requests yet.';return;}
+        const ordered=result.docs.filter(entry=>{const s=entry.data().status;return accessFilter==='all'||(accessFilter==='active'&&['pending','approved'].includes(s))||(accessFilter==='revoked'&&['revoked','denied'].includes(s))||(accessFilter==='deleted'&&s==='deleted');}).sort((a,b)=>(a.data().status==='pending'?0:1)-(b.data().status==='pending'?0:1)||String(a.data().email).localeCompare(String(b.data().email)));
+        if(!ordered.length){panel.textContent='No users in this view.';return;}
         for(const entry of ordered){
           const rec=entry.data(),row=document.createElement('div');row.className='access-user-row';
-          const label=document.createElement('div'),name=document.createElement('strong'),meta=document.createElement('small');name.textContent=rec.email;meta.textContent=' · '+rec.status;label.append(name,meta);row.append(label);
+          const label=document.createElement('div'),name=document.createElement('strong'),meta=document.createElement('small');name.textContent=rec.email;meta.textContent=' · '+({approved:'Approved',pending:'Pending',denied:'Denied',revoked:'Revoked',deleted:'Deleted'}[rec.status]||rec.status);label.append(name,meta);row.append(label);
           const actions=document.createElement('div');actions.className='actions';
-          const action=(title,fn,danger=false)=>{const b=document.createElement('button');b.type='button';b.className=danger?'danger':'secondary';b.textContent=title;b.onclick=async()=>{if(session!==generation||!accessAdmin)return;for(const btn of actions.querySelectorAll('button'))btn.disabled=true;try{await fn();if(session===generation){notify('Access management updated');await accessAdminLoad();}}catch(e){notify('Action failed: '+(e.code||e.message));}finally{for(const btn of actions.querySelectorAll('button'))btn.disabled=false;}};actions.append(b);};
+          const action=(title,fn,danger=false)=>{const b=document.createElement('button');b.type='button';b.className=danger?'danger':'secondary';b.textContent=title;b.onclick=async()=>{if(session!==generation||!accessAdmin)return;for(const btn of actions.querySelectorAll('button'))btn.disabled=true;try{const changed=await fn();if(changed===false)return;if(session===generation){notify('Access management updated');await accessAdminLoad();}}catch(e){notify('Action failed: '+(e.code||e.message));}finally{for(const btn of actions.querySelectorAll('button'))btn.disabled=false;}};actions.append(b);};
           if(rec.status!=='approved')action('Approve',()=>updateDoc(entry.ref,{status:'approved'}));
-          if(rec.status==='pending')action('Deny',async()=>{if(confirm('Deny access to '+rec.email+'?'))await updateDoc(entry.ref,{status:'denied'});},true);
-          if(rec.status==='approved')action('Revoke Access',async()=>{if(confirm('Revoke access for '+rec.email+'? Their data will be preserved.'))await updateDoc(entry.ref,{status:'revoked'});},true);
+          if(rec.status==='pending')action('Deny',async()=>{if(!confirm('Deny access to '+rec.email+'?'))return false;await updateDoc(entry.ref,{status:'denied'});},true);
+          if(rec.status==='approved')action('Revoke Access',async()=>{if(!confirm('Revoke access for '+rec.email+'? Their data will be preserved.'))return false;await updateDoc(entry.ref,{status:'revoked'});},true);
           if(rec.status==='revoked'||rec.status==='denied')action('Delete User Data',async()=>{
-            if(prompt('Permanently delete this user’s dashboard data? Type DELETE to confirm.')!=='DELETE')return;
-            await runTransaction(db,async tx=>{const current=await tx.get(entry.ref);if(!current.exists()||!['revoked','denied'].includes(current.data().status))throw Error('Revoke access first.');tx.delete(doc(db,'users',entry.id,'dashboard','state'));});
+            if(prompt('Permanently delete dashboard data for '+rec.email+'? Type DELETE to confirm.')!=='DELETE')return false;
+            await runTransaction(db,async tx=>{const current=await tx.get(entry.ref);if(!current.exists()||!['revoked','denied'].includes(current.data().status))throw Error('Revoke access first.');tx.delete(doc(db,'users',entry.id,'dashboard','state'));tx.update(entry.ref,{status:'deleted'});});
           },true);
           row.append(actions);panel.append(row);
         }
